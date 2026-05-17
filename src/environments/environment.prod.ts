@@ -1,5 +1,4 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://loadtrack-backend.onrender.com/api'
-  // This URL will be updated after Render deployment
+  apiUrl: 'https://loadtrack-backend-e90g.onrender.com/api'
 };
