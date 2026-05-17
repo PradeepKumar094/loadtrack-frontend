@@ -1,0 +1,90 @@
+<div class="page-header">
+  <div>
+    <h1 class="page-title">
+      <i class="fas fa-brain ai-icon"></i> Payment Risk Analysis
+    </h1>
+    <p class="page-subtitle">AI-powered dealer payment risk assessment</p>
+  </div>
+</div>
+
+<div *ngIf="loading" class="loading-state"><i class="fas fa-spinner fa-spin"></i> Analyzing payment patterns...</div>
+
+<div *ngIf="!loading">
+
+  <!-- Summary Cards -->
+  <div class="stats-grid">
+    <div class="stat-card risk-stat-high">
+      <div class="stat-icon red"><i class="fas fa-exclamation-triangle"></i></div>
+      <div class="stat-info">
+        <div class="stat-value">{{ getHighCount() }}</div>
+        <div class="stat-label">High Risk Dealers</div>
+      </div>
+    </div>
+    <div class="stat-card risk-stat-medium">
+      <div class="stat-icon orange"><i class="fas fa-exclamation-circle"></i></div>
+      <div class="stat-info">
+        <div class="stat-value">{{ getMediumCount() }}</div>
+        <div class="stat-label">Medium Risk Dealers</div>
+      </div>
+    </div>
+    <div class="stat-card risk-stat-low">
+      <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
+      <div class="stat-info">
+        <div class="stat-value">{{ getLowCount() }}</div>
+        <div class="stat-label">Low Risk Dealers</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Risk Cards -->
+  <div class="risk-list">
+    <div *ngFor="let r of risks" class="risk-card" [ngClass]="getRiskClass(r.riskLevel)">
+
+      <div class="risk-card-header">
+        <div class="risk-dealer-info">
+          <div class="risk-avatar" [ngClass]="getRiskClass(r.riskLevel)">
+            {{ r.dealerName.charAt(0).toUpperCase() }}
+          </div>
+          <div>
+            <div class="risk-dealer-name">{{ r.dealerName }}</div>
+            <div class="risk-payments-info">{{ r.totalPayments }} total payments · {{ r.latePayments }} late</div>
+          </div>
+        </div>
+
+        <div class="risk-badge-wrap">
+          <div class="risk-badge" [ngClass]="getRiskClass(r.riskLevel)">
+            <i [class]="getRiskIcon(r.riskLevel)"></i>
+            {{ r.riskLevel }} RISK
+          </div>
+          <div class="risk-score-bar">
+            <div class="risk-score-fill" [style.width.%]="r.riskScore"
+                 [ngClass]="getRiskClass(r.riskLevel)"></div>
+          </div>
+          <div class="risk-score-label">Score: {{ r.riskScore }}/100</div>
+        </div>
+      </div>
+
+      <div class="risk-details">
+        <div class="risk-detail-item">
+          <i class="fas fa-rupee-sign"></i>
+          <span>Pending: <strong>₹{{ r.totalPending | number }}</strong></span>
+        </div>
+        <div class="risk-detail-item">
+          <i class="fas fa-clock"></i>
+          <span>Overdue payments: <strong>{{ r.overdueCount }}</strong></span>
+        </div>
+        <div class="risk-detail-item reason">
+          <i class="fas fa-info-circle"></i>
+          <span>{{ r.riskReason }}</span>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="empty-state-box" *ngIf="risks.length === 0">
+      <i class="fas fa-check-circle" style="color:#27ae60"></i>
+      <p>No dealers found to analyze</p>
+    </div>
+  </div>
+
+</div>

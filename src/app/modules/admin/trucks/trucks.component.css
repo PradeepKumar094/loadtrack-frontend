@@ -1,0 +1,19 @@
+.table-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.toolbar-left { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.toolbar-right { display: flex; align-items: center; gap: 10px; }
+.search-box { display: flex; align-items: center; gap: 8px; background: #f8f9fa; border: 1px solid #eee; border-radius: 8px; padding: 8px 14px; width: 240px; }
+.search-box i { color: #aaa; }
+.search-input { border: none; background: none; outline: none; font-size: 14px; width: 100%; font-family: 'Inter', sans-serif; }
+.filter-group { display: flex; align-items: center; gap: 6px; }
+.filter-group label { font-size: 13px; font-weight: 500; color: #555; white-space: nowrap; }
+.filter-select { width: 150px; padding: 7px 10px; font-size: 13px; }
+.record-count { font-size: 13px; color: #888; white-space: nowrap; }
+.loading-state { text-align: center; padding: 40px; color: #888; }
+.empty-state { text-align: center; color: #aaa; padding: 32px; font-style: italic; }

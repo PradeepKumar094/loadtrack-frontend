@@ -1,0 +1,151 @@
+.loading-state { text-align: center; padding: 60px; color: #888; }
+
+/* Welcome Banner */
+.welcome-banner { background: linear-gradient(135deg, #1a2332, #2c3e50); border-radius: 12px; padding: 24px 28px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 16px; }
+.welcome-left { display: flex; align-items: center; gap: 16px; }
+.welcome-avatar { width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #3498db, #2980b9); color: #fff; font-size: 22px; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 2px solid rgba(255,255,255,0.2); }
+.welcome-greeting { font-size: 13px; color: rgba(255,255,255,0.6); }
+.welcome-name { font-size: 20px; font-weight: 700; color: #fff; }
+.welcome-role { font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 2px; }
+.welcome-right { display: flex; gap: 10px; position: relative; }
+.quick-btn { display: flex; align-items: center; gap: 8px; padding: 9px 18px; background: #3498db; color: #fff; border-radius: 8px; text-decoration: none; font-size: 13px; font-weight: 500; transition: background 0.2s; position: relative; }
+.quick-btn:hover { background: #2980b9; }
+.quick-btn.outline { background: transparent; border: 1px solid rgba(255,255,255,0.3); }
+.quick-btn.outline:hover { background: rgba(255,255,255,0.1); }
+.notif-badge { position: absolute; top: -6px; right: -6px; background: #e74c3c; color: #fff; font-size: 10px; font-weight: 700; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid #2c3e50; }
+
+/* Notifications */
+.notifications-section { background: #fff8e1; border: 1px solid #ffc107; border-radius: 10px; padding: 16px 20px; margin-bottom: 20px; }
+.notif-header { display: flex; align-items: center; gap: 10px; font-size: 14px; color: #856404; margin-bottom: 12px; font-weight: 500; }
+.notif-icon { font-size: 18px; color: #f39c12; animation: bell 1s ease infinite; }
+@keyframes bell { 0%,100% { transform: rotate(0); } 25% { transform: rotate(15deg); } 75% { transform: rotate(-15deg); } }
+.notif-trips { display: flex; flex-direction: column; gap: 10px; }
+.notif-trip-card { background: #fff; border: 1px solid #ffe082; border-radius: 8px; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+.notif-trip-title { font-size: 14px; font-weight: 600; color: #2c3e50; margin-bottom: 6px; }
+.notif-trip-title i { color: #f39c12; margin-right: 6px; }
+.notif-trip-details { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: #666; }
+.notif-trip-details span i { margin-right: 4px; color: #aaa; }
+.notif-ack-btn { white-space: nowrap; }
+
+/* Salary Summary */
+.salary-card { margin-bottom: 20px; }
+.salary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+.salary-box { display: flex; align-items: center; gap: 14px; padding: 16px; border-radius: 10px; }
+.salary-box.earned   { background: #eafaf1; border: 1px solid #a9dfbf; }
+.salary-box.credited { background: #ebf5fb; border: 1px solid #aed6f1; }
+.salary-box.pending  { background: #fdedec; border: 1px solid #f1948a; }
+.salary-box.rate     { background: #fef9e7; border: 1px solid #f9e79f; }
+.salary-box-icon { width: 44px; height: 44px; border-radius: 10px; background: rgba(0,0,0,0.06); display: flex; align-items: center; justify-content: center; font-size: 18px; color: #555; flex-shrink: 0; }
+.salary-box-label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
+.salary-box-value { font-size: 18px; font-weight: 700; color: #2c3e50; }
+.salary-box-sub { font-size: 11px; color: #aaa; margin-top: 2px; }
+
+/* Salary Credit Notification */
+.salary-notif-section {
+  background: linear-gradient(135deg, #eafaf1, #d5f5e3);
+  border: 1px solid #a9dfbf;
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  animation: slideDown 0.3s ease;
+}
+@keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+.salary-notif-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.salary-notif-left { display: flex; align-items: center; gap: 10px; font-size: 14px; color: #1e8449; font-weight: 500; }
+.salary-notif-icon { font-size: 18px; color: #27ae60; }
+
+.notif-dismiss-btn {
+  display: flex; align-items: center; gap: 5px;
+  background: none; border: 1px solid #a9dfbf;
+  border-radius: 6px; padding: 4px 10px;
+  font-size: 12px; color: #27ae60; cursor: pointer;
+  transition: all 0.2s;
+}
+.notif-dismiss-btn:hover { background: #27ae60; color: #fff; border-color: #27ae60; }
+
+.salary-notif-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.salary-notif-item {
+  background: #fff;
+  border: 1px solid #a9dfbf;
+  border-radius: 8px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.salary-notif-amount { font-size: 20px; font-weight: 700; color: #27ae60; min-width: 100px; }
+.salary-notif-details { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+.salary-notif-details span { font-size: 13px; color: #555; }
+.salary-notif-time { font-size: 11px; color: #aaa; }
+.notif-check { font-size: 18px; color: #27ae60; }
+
+.salary-notif-footer { text-align: right; }
+.salary-notif-footer a {
+  font-size: 13px; color: #27ae60; text-decoration: none;
+  font-weight: 500; display: inline-flex; align-items: center; gap: 5px;
+}
+.salary-notif-footer a:hover { text-decoration: underline; }
+
+/* Credit history table */
+.credit-history { margin-top: 20px; border-top: 1px solid #f0f0f0; padding-top: 16px; }
+.credit-history h4 { font-size: 14px; font-weight: 600; color: #2c3e50; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.credit-history h4 i { color: #27ae60; }
+.credit-amount { color: #27ae60; font-weight: 600; }
+.no-credits { font-size: 13px; color: #aaa; margin-top: 12px; padding: 12px; background: #f8f9fa; border-radius: 6px; }
+.no-credits i { margin-right: 6px; }
+.route-cell { white-space: nowrap; font-size: 12px; }
+.route-from { color: #27ae60; font-weight: 500; }
+.route-to   { color: #3498db; font-weight: 500; }
+.extra-tag { font-size: 11px; color: #27ae60; margin-left: 4px; }
+
+/* Empty */
+.empty-card { background: #fff; border-radius: 12px; padding: 60px; text-align: center; color: #aaa; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.empty-card i { font-size: 48px; margin-bottom: 12px; display: block; }
+
+/* Salary Snapshot (compact, links to full page) */
+.salary-snapshot {
+  background: #fff;
+  border-radius: 10px;
+  padding: 16px 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.snapshot-item { display: flex; align-items: center; gap: 10px; }
+.snapshot-item i { font-size: 20px; }
+.snapshot-item.earned   i { color: #27ae60; }
+.snapshot-item.credited i { color: #3498db; }
+.snapshot-item.pending  i { color: #e74c3c; }
+.snap-val { font-size: 16px; font-weight: 700; color: #2c3e50; }
+.snap-lbl { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+.snapshot-link {
+  margin-left: auto;
+  display: flex; align-items: center; gap: 6px;
+  font-size: 13px; font-weight: 500; color: #3498db;
+  text-decoration: none;
+  padding: 7px 14px;
+  border: 1px solid #3498db;
+  border-radius: 6px;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.snapshot-link:hover { background: #3498db; color: #fff; }
+
+/* Table */
+.route-cell { white-space: nowrap; font-size: 12px; }
+.route-from { color: #27ae60; font-weight: 500; }
+.route-to   { color: #3498db; font-weight: 500; }
+.extra-tag { font-size: 11px; color: #27ae60; margin-left: 4px; }
+
+/* Empty */
+.empty-card { background: #fff; border-radius: 12px; padding: 60px; text-align: center; color: #aaa; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.empty-card i { font-size: 48px; margin-bottom: 12px; display: block; }

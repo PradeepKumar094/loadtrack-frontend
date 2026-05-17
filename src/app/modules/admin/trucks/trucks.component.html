@@ -1,0 +1,151 @@
+<div class="page-header">
+  <div><h1 class="page-title">Trucks</h1><p class="page-subtitle">Manage your truck fleet</p></div>
+  <button class="btn btn-primary" (click)="openAdd()"><i class="fas fa-plus"></i> Add Truck</button>
+</div>
+
+<div class="alert alert-success" *ngIf="successMsg"><i class="fas fa-check-circle"></i> {{ successMsg }}</div>
+<div class="alert alert-danger" *ngIf="errorMsg && !showModal"><i class="fas fa-exclamation-circle"></i> {{ errorMsg }}</div>
+
+<div class="card">
+  <div class="table-toolbar">
+    <div class="toolbar-left">
+      <div class="search-box">
+        <i class="fas fa-search"></i>
+        <input type="text" placeholder="Search truck, model, RC..." [(ngModel)]="searchTerm" (input)="applyFilters()" class="search-input">
+      </div>
+      <div class="filter-group">
+        <label><i class="fas fa-filter"></i> Status:</label>
+        <select class="form-control filter-select" [(ngModel)]="filterStatus" (change)="applyFilters()">
+          <option value="">All Status</option>
+          <option value="AVAILABLE">Available</option>
+          <option value="ON_TRIP">On Trip</option>
+          <option value="MAINTENANCE">Maintenance</option>
+        </select>
+      </div>
+    </div>
+    <div class="toolbar-right">
+      <span class="record-count">{{ filtered.length }} of {{ trucks.length }} trucks</span>
+      <button class="btn btn-secondary btn-sm" (click)="filterStatus=''; searchTerm=''; applyFilters()" *ngIf="filterStatus || searchTerm">
+        <i class="fas fa-times"></i> Clear
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="loading-state"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+
+  <div class="table-wrapper" *ngIf="!loading">
+    <table>
+      <thead>
+        <tr>
+          <th class="sortable" (click)="sortBy('truckNumber')">
+            Truck Number <i [class]="getSortIcon('truckNumber')"></i>
+          </th>
+          <th class="sortable" (click)="sortBy('model')">
+            Model <i [class]="getSortIcon('model')"></i>
+          </th>
+          <th class="sortable" (click)="sortBy('capacityTons')">
+            Capacity (Tons) <i [class]="getSortIcon('capacityTons')"></i>
+          </th>
+          <th class="sortable" (click)="sortBy('insuranceNumber')">
+            Insurance No. <i [class]="getSortIcon('insuranceNumber')"></i>
+          </th>
+          <th class="sortable" (click)="sortBy('rcNumber')">
+            RC Number <i [class]="getSortIcon('rcNumber')"></i>
+          </th>
+          <th class="sortable" (click)="sortBy('status')">
+            Status <i [class]="getSortIcon('status')"></i>
+          </th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let truck of filtered">
+          <td><strong>{{ truck.truckNumber }}</strong></td>
+          <td>{{ truck.model }}</td>
+          <td>{{ truck.capacityTons }} tons</td>
+          <td>{{ truck.insuranceNumber }}</td>
+          <td>{{ truck.rcNumber }}</td>
+          <td><span class="badge" [ngClass]="getStatusClass(truck.status)">{{ truck.status }}</span></td>
+          <td>
+            <button class="btn btn-warning btn-sm" (click)="openEdit(truck)" title="Edit"><i class="fas fa-edit"></i></button>
+            <button class="btn btn-danger btn-sm" (click)="delete(truck.id)" title="Delete" style="margin-left:6px"><i class="fas fa-trash"></i></button>
+          </td>
+        </tr>
+        <tr *ngIf="filtered.length === 0"><td colspan="7" class="empty-state">No trucks found</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" *ngIf="showModal" (click)="showModal = false">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3 class="modal-title">{{ isEdit ? 'Edit Truck' : 'Add New Truck' }}</h3>
+      <button class="modal-close" (click)="showModal = false">&times;</button>
+    </div>
+    <div class="alert alert-danger" *ngIf="errorMsg">{{ errorMsg }}</div>
+    <form (ngSubmit)="save()" #truckForm="ngForm" novalidate>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Truck Number <span class="req">*</span></label>
+          <input type="text" class="form-control" [class.is-invalid]="truckNum.invalid && truckNum.touched"
+                 [(ngModel)]="form.truckNumber" name="truckNumber" #truckNum="ngModel" required placeholder="e.g. TN01AB1234">
+          <div class="field-error" *ngIf="truckNum.invalid && truckNum.touched">
+            <i class="fas fa-exclamation-circle"></i> Truck number is required
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Model <span class="req">*</span></label>
+          <input type="text" class="form-control" [class.is-invalid]="model.invalid && model.touched"
+                 [(ngModel)]="form.model" name="model" #model="ngModel" required placeholder="e.g. Tata 407">
+          <div class="field-error" *ngIf="model.invalid && model.touched">
+            <i class="fas fa-exclamation-circle"></i> Model is required
+          </div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Capacity (Tons) <span class="req">*</span></label>
+          <input type="number" class="form-control" [class.is-invalid]="capacity.invalid && capacity.touched"
+                 [(ngModel)]="form.capacityTons" name="capacityTons" #capacity="ngModel" required min="0.1" step="0.1">
+          <div class="field-error" *ngIf="capacity.invalid && capacity.touched">
+            <i class="fas fa-exclamation-circle"></i>
+            <span *ngIf="capacity.errors?.['required']">Capacity is required</span>
+            <span *ngIf="capacity.errors?.['min']">Must be greater than 0</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select class="form-control" [(ngModel)]="form.status" name="status">
+            <option value="AVAILABLE">Available</option>
+            <option value="ON_TRIP">On Trip</option>
+            <option value="MAINTENANCE">Maintenance</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Insurance Number <span class="req">*</span></label>
+          <input type="text" class="form-control" [class.is-invalid]="insurance.invalid && insurance.touched"
+                 [(ngModel)]="form.insuranceNumber" name="insuranceNumber" #insurance="ngModel" required>
+          <div class="field-error" *ngIf="insurance.invalid && insurance.touched">
+            <i class="fas fa-exclamation-circle"></i> Insurance number is required
+          </div>
+        </div>
+        <div class="form-group">
+          <label>RC Number <span class="req">*</span></label>
+          <input type="text" class="form-control" [class.is-invalid]="rc.invalid && rc.touched"
+                 [(ngModel)]="form.rcNumber" name="rcNumber" #rc="ngModel" required>
+          <div class="field-error" *ngIf="rc.invalid && rc.touched">
+            <i class="fas fa-exclamation-circle"></i> RC number is required
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="showModal = false">Cancel</button>
+        <button type="submit" class="btn btn-primary">{{ isEdit ? 'Update Truck' : 'Add Truck' }}</button>
+      </div>
+    </form>
+  </div>
+</div>

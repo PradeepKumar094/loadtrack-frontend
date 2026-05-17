@@ -1,0 +1,191 @@
+<div class="page-header">
+  <div>
+    <h1 class="page-title">
+      Sand Requests
+      <span class="pending-badge" *ngIf="getPendingCount() > 0">{{ getPendingCount() }} Pending</span>
+    </h1>
+    <p class="page-subtitle">Review and approve dealer sand requests</p>
+  </div>
+</div>
+
+<div class="alert alert-success" *ngIf="successMsg"><i class="fas fa-check-circle"></i> {{ successMsg }}</div>
+<div class="alert alert-danger"  *ngIf="errorMsg && !showAcceptModal && !showRejectModal">
+  <i class="fas fa-exclamation-circle"></i> {{ errorMsg }}
+</div>
+
+<div class="card">
+  <div class="table-toolbar">
+    <div class="toolbar-left">
+      <div class="filter-group">
+        <label><i class="fas fa-filter"></i> Status:</label>
+        <select class="form-control filter-select" [(ngModel)]="filterStatus" (change)="applyFilter()">
+          <option value="">All Requests</option>
+          <option value="PENDING">Pending</option>
+          <option value="ACCEPTED">Accepted</option>
+          <option value="DELIVERED">Delivered</option>
+          <option value="REJECTED">Rejected</option>
+        </select>
+      </div>
+    </div>
+    <div class="toolbar-right">
+      <span class="record-count">{{ filtered.length }} of {{ requests.length }} requests</span>
+      <button class="btn btn-secondary btn-sm" (click)="filterStatus=''; applyFilter()" *ngIf="filterStatus">
+        <i class="fas fa-times"></i> Clear
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="loading-state"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+
+  <div class="table-wrapper" *ngIf="!loading">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Dealer</th>
+          <th>Sand Type</th>
+          <th>Tons</th>
+          <th>Route</th>
+          <th>Dist.</th>
+          <th>Date</th>
+          <th>Est. Amount</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let r of filtered; let i = index" [class.pending-row]="r.status==='PENDING'">
+          <td>{{ i+1 }}</td>
+          <td>
+            <div class="dealer-cell">
+              <strong>{{ r.dealer.name }}</strong>
+              <span class="dealer-phone">{{ r.dealer.phone }}</span>
+            </div>
+          </td>
+          <td>{{ r.sandType.name }}</td>
+          <td>{{ r.tons }}</td>
+          <td class="route-cell">
+            <span class="route-from">{{ r.sourceLocation }}</span>
+            <i class="fas fa-arrow-right" style="color:#aaa;margin:0 4px;font-size:10px"></i>
+            <span class="route-to">{{ r.destinationLocation }}</span>
+          </td>
+          <td>{{ r.distanceKm }} km</td>
+          <td>{{ r.requestedDate }}</td>
+          <td><strong>₹{{ (r.tons * r.sandType.pricePerTon) | number }}</strong></td>
+          <td>
+            <span class="badge" [ngClass]="getStatusClass(r.status)">{{ r.status }}</span>
+            <div class="trip-ref" *ngIf="r.trip">Trip #{{ r.trip.id }}</div>
+          </td>
+          <td>
+            <div class="action-btns" *ngIf="r.status === 'PENDING'">
+              <button class="btn btn-success btn-sm" (click)="openAccept(r)" title="Accept & Create Trip">
+                <i class="fas fa-check"></i> Accept
+              </button>
+              <button class="btn btn-danger btn-sm" (click)="openReject(r)" title="Reject">
+                <i class="fas fa-times"></i> Reject
+              </button>
+            </div>
+            <div *ngIf="r.status !== 'PENDING'" class="admin-remarks-cell">
+              {{ r.adminRemarks || '—' }}
+            </div>
+          </td>
+        </tr>
+        <tr *ngIf="filtered.length === 0">
+          <td colspan="10" class="empty-state">No sand requests found</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══ ACCEPT MODAL ══ -->
+<div class="modal-overlay" *ngIf="showAcceptModal" (click)="showAcceptModal=false">
+  <div class="modal modal-accept" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3 class="modal-title"><i class="fas fa-check-circle"></i> Accept Request & Create Trip</h3>
+      <button class="modal-close" (click)="showAcceptModal=false">&times;</button>
+    </div>
+
+    <div class="alert alert-danger" *ngIf="errorMsg">{{ errorMsg }}</div>
+
+    <!-- Request Summary -->
+    <div class="req-summary" *ngIf="selectedRequest">
+      <div class="req-sum-row"><span>Dealer</span><strong>{{ selectedRequest.dealer.name }}</strong></div>
+      <div class="req-sum-row"><span>Sand Type</span><strong>{{ selectedRequest.sandType.name }}</strong></div>
+      <div class="req-sum-row"><span>Tons</span><strong>{{ selectedRequest.tons }}</strong></div>
+      <div class="req-sum-row"><span>Route</span><strong>{{ selectedRequest.sourceLocation }} → {{ selectedRequest.destinationLocation }}</strong></div>
+      <div class="req-sum-row"><span>Distance</span><strong>{{ selectedRequest.distanceKm }} km</strong></div>
+      <div class="req-sum-row"><span>Date</span><strong>{{ selectedRequest.requestedDate }}</strong></div>
+    </div>
+
+    <!-- Assign Truck -->
+    <div class="form-group">
+      <label>Assign Truck <span class="req">*</span>
+        <span class="hint-label" *ngIf="selectedRequest">
+          — showing trucks with capacity ≥ {{ selectedRequest.tons }} tons
+        </span>
+      </label>
+      <select class="form-control" [(ngModel)]="acceptTruckId">
+        <option [ngValue]="0" disabled>Select available truck</option>
+        <option *ngFor="let t of suitableTrucks" [ngValue]="t.id">
+          {{ t.truckNumber }} – {{ t.model }} ({{ t.capacityTons }} tons)
+        </option>
+      </select>
+      <div class="hint" *ngIf="suitableTrucks.length === 0">
+        <i class="fas fa-exclamation-triangle" style="color:#e74c3c"></i>
+        No available trucks with sufficient capacity
+      </div>
+    </div>
+
+    <!-- Assign Driver -->
+    <div class="form-group">
+      <label>Assign Driver <span class="req">*</span></label>
+      <select class="form-control" [(ngModel)]="acceptDriverId">
+        <option [ngValue]="0" disabled>Select driver</option>
+        <option *ngFor="let d of drivers" [ngValue]="d.id">
+          {{ d.name }} – {{ d.phone }}
+        </option>
+      </select>
+    </div>
+
+    <!-- Admin Remarks -->
+    <div class="form-group">
+      <label>Remarks (Optional)</label>
+      <input type="text" class="form-control" [(ngModel)]="acceptRemarks"
+             placeholder="e.g. Approved, truck dispatched tomorrow">
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="showAcceptModal=false">Cancel</button>
+      <button type="button" class="btn btn-success" (click)="accept()"
+              [disabled]="accepting || !acceptTruckId || !acceptDriverId">
+        <i class="fas fa-check" *ngIf="!accepting"></i>
+        <i class="fas fa-spinner fa-spin" *ngIf="accepting"></i>
+        {{ accepting ? 'Creating Trip...' : 'Accept & Create Trip' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ REJECT MODAL ══ -->
+<div class="modal-overlay" *ngIf="showRejectModal" (click)="showRejectModal=false">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3 class="modal-title"><i class="fas fa-times-circle"></i> Reject Request</h3>
+      <button class="modal-close" (click)="showRejectModal=false">&times;</button>
+    </div>
+    <div class="form-group">
+      <label>Reason for Rejection</label>
+      <textarea class="form-control" [(ngModel)]="rejectRemarks" rows="3"
+                placeholder="e.g. No trucks available, date conflict..."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="showRejectModal=false">Cancel</button>
+      <button type="button" class="btn btn-danger" (click)="reject()" [disabled]="rejecting">
+        <i class="fas fa-times" *ngIf="!rejecting"></i>
+        <i class="fas fa-spinner fa-spin" *ngIf="rejecting"></i>
+        {{ rejecting ? 'Rejecting...' : 'Reject Request' }}
+      </button>
+    </div>
+  </div>
+</div>

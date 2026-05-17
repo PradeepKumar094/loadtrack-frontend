@@ -1,0 +1,204 @@
+<div class="page-header">
+  <div><h1 class="page-title">My Payments</h1><p class="page-subtitle">View payment history and receipts</p></div>
+</div>
+
+<div class="alert alert-danger" *ngIf="errorMsg"><i class="fas fa-exclamation-circle"></i> {{ errorMsg }}</div>
+<div class="alert alert-success" *ngIf="successMsg"><i class="fas fa-check-circle"></i> {{ successMsg }}</div>
+
+<div *ngIf="loading" class="loading-state"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+
+<div *ngIf="!loading">
+
+  <!-- Summary Cards -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon blue"><i class="fas fa-file-invoice-dollar"></i></div>
+      <div class="stat-info">
+        <div class="stat-value">₹{{ getTotalBilled() | number }}</div>
+        <div class="stat-label">Total Billed</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
+      <div class="stat-info">
+        <div class="stat-value">₹{{ getTotalPaid() | number }}</div>
+        <div class="stat-label">Total Paid</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon red"><i class="fas fa-clock"></i></div>
+      <div class="stat-info">
+        <div class="stat-value">₹{{ getTotalPending() | number }}</div>
+        <div class="stat-label">Pending</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overdue Alert -->
+  <div class="overdue-alert" *ngIf="hasOverdue">
+    <i class="fas fa-exclamation-triangle"></i>
+    You have overdue payments. Please clear them to avoid interest charges.
+  </div>
+
+  <!-- Filters -->
+  <div class="card">
+    <div class="table-toolbar">
+      <div class="toolbar-left">
+        <div class="search-box">
+          <i class="fas fa-search"></i>
+          <input type="text" placeholder="Search by date or amount..."
+                 [(ngModel)]="searchTerm" (input)="applyFilters()" class="search-input">
+        </div>
+        <div class="filter-group">
+          <label><i class="fas fa-filter"></i> Status:</label>
+          <select class="form-control filter-select" [(ngModel)]="filterStatus" (change)="applyFilters()">
+            <option value="">All</option>
+            <option value="UNPAID">Unpaid</option>
+            <option value="PARTIAL">Partial</option>
+            <option value="PAID">Paid</option>
+          </select>
+        </div>
+      </div>
+      <span class="record-count">{{ filtered.length }} of {{ payments.length }} payments</span>
+    </div>
+
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th><th>Trip Date</th><th>Trip Details</th>
+            <th>Total</th><th>Paid</th><th>Remaining</th>
+            <th>Due Date</th><th>Status</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let p of filtered; let i = index" [class.overdue-row]="isOverdue(p)">
+            <td>{{ i+1 }}</td>
+            <td>{{ p.trip.tripDate }}</td>
+            <td>
+              <div class="trip-detail">
+                <span class="trip-truck"><i class="fas fa-route"></i> Trip #{{ p.trip.id }}</span>
+              </div>
+            </td>
+            <td>₹{{ p.finalAmount | number }}</td>
+            <td class="paid-cell">₹{{ p.paidAmount | number }}</td>
+            <td [class.pending-cell]="getRemainingAmount(p) > 0">
+              <strong>₹{{ getRemainingAmount(p) | number }}</strong>
+            </td>
+            <td [class.overdue-text]="isOverdue(p)">
+              {{ p.dueDate || '—' }}
+              <span class="overdue-badge" *ngIf="isOverdue(p)">OVERDUE</span>
+            </td>
+            <td><span class="badge" [ngClass]="getStatusClass(p.paymentStatus)">{{ p.paymentStatus }}</span></td>
+            <td class="action-btns">
+              <button class="btn btn-success btn-sm" (click)="openPayModal(p)"
+                      *ngIf="p.paymentStatus !== 'PAID'" title="Pay amount">
+                <i class="fas fa-rupee-sign"></i> Pay
+              </button>
+              <button class="btn btn-info btn-sm" (click)="openTransactionLog(p)" title="Payment history">
+                <i class="fas fa-history"></i>
+              </button>
+              <button class="btn btn-secondary btn-sm" (click)="downloadReceipt(p.id)"
+                      *ngIf="p.paymentStatus === 'PAID'" title="Download receipt">
+                <i class="fas fa-file-pdf"></i>
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="filtered.length === 0">
+            <td colspan="9" class="empty-state">No payments found</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Transaction Log Modal -->
+<div class="modal-overlay" *ngIf="showLogModal" (click)="showLogModal=false">
+  <div class="modal modal-lg" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3 class="modal-title"><i class="fas fa-history"></i> Payment History</h3>
+      <button class="modal-close" (click)="showLogModal=false">&times;</button>
+    </div>
+
+    <div class="log-summary" *ngIf="selectedLogPayment">
+      <div class="log-stat"><span>Total</span><strong>₹{{ selectedLogPayment.finalAmount | number }}</strong></div>
+      <div class="log-stat"><span>Paid</span><strong class="text-success">₹{{ selectedLogPayment.paidAmount | number }}</strong></div>
+      <div class="log-stat"><span>Remaining</span><strong class="text-danger">₹{{ getRemainingAmount(selectedLogPayment) | number }}</strong></div>
+      <div class="log-stat">
+        <span>Status</span>
+        <span class="badge" [ngClass]="getStatusClass(selectedLogPayment.paymentStatus)">{{ selectedLogPayment.paymentStatus }}</span>
+      </div>
+    </div>
+
+    <div *ngIf="logLoading" class="loading-state"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+
+    <div *ngIf="!logLoading && transactions.length === 0" class="empty-log">
+      <i class="fas fa-inbox"></i><p>No payment transactions yet</p>
+    </div>
+
+    <div class="timeline" *ngIf="!logLoading && transactions.length > 0">
+      <div class="timeline-item" *ngFor="let txn of transactions; let i = index">
+        <div class="timeline-dot" [class.first]="i === 0">{{ i+1 }}</div>
+        <div class="timeline-content">
+          <div class="txn-header">
+            <span class="txn-amount">₹{{ txn.amountPaid | number }}</span>
+            <span class="txn-time">{{ txn.paidAt | date:'dd MMM yyyy, hh:mm a' }}</span>
+          </div>
+          <div class="txn-remarks">{{ txn.remarks }}</div>
+          <div class="txn-balance">Balance after: <strong>₹{{ txn.balanceAfter | number }}</strong></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="showLogModal=false">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PAY MODAL ══ -->
+<div class="modal-overlay" *ngIf="showPayModal" (click)="showPayModal=false">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3 class="modal-title"><i class="fas fa-rupee-sign"></i> Make Payment</h3>
+      <button class="modal-close" (click)="showPayModal=false">&times;</button>
+    </div>
+
+    <div class="alert alert-danger" *ngIf="errorMsg">{{ errorMsg }}</div>
+
+    <div *ngIf="selectedPayment" class="pay-summary">
+      <div class="pay-row"><span>Trip Date</span><strong>{{ selectedPayment.trip.tripDate }}</strong></div>
+      <div class="pay-row"><span>Total Amount</span><strong>₹{{ selectedPayment.finalAmount | number }}</strong></div>
+      <div class="pay-row"><span>Already Paid</span><strong class="text-success">₹{{ selectedPayment.paidAmount | number }}</strong></div>
+      <div class="pay-row highlight">
+        <span>Remaining Due</span>
+        <strong class="text-danger">₹{{ getRemainingAmount(selectedPayment) | number }}</strong>
+      </div>
+    </div>
+
+    <div class="form-group mt-2">
+      <label>Amount to Pay (₹) <span class="req">*</span></label>
+      <input type="number" class="form-control" [(ngModel)]="payAmount"
+             min="1" [max]="selectedPayment ? getRemainingAmount(selectedPayment) : 0"
+             placeholder="Enter amount">
+      <small class="hint">Max: ₹{{ selectedPayment ? (getRemainingAmount(selectedPayment) | number) : 0 }}</small>
+    </div>
+
+    <div class="form-group">
+      <label>Remarks (Optional)</label>
+      <input type="text" class="form-control" [(ngModel)]="payRemarks"
+             placeholder="e.g. Cash payment, Bank transfer">
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="showPayModal=false">Cancel</button>
+      <button type="button" class="btn btn-success" (click)="makePayment()"
+              [disabled]="paying || payAmount <= 0">
+        <i class="fas fa-check" *ngIf="!paying"></i>
+        <i class="fas fa-spinner fa-spin" *ngIf="paying"></i>
+        {{ paying ? 'Processing...' : 'Confirm Payment' }}
+      </button>
+    </div>
+  </div>
+</div>

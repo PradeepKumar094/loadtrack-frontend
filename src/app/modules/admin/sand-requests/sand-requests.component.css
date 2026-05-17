@@ -1,0 +1,39 @@
+.loading-state { text-align: center; padding: 40px; color: #888; }
+.empty-state { text-align: center; color: #aaa; padding: 32px; font-style: italic; }
+
+/* Pending badge in title */
+.pending-badge {
+  display: inline-block; background: #e74c3c; color: #fff;
+  font-size: 12px; font-weight: 600; padding: 3px 10px;
+  border-radius: 20px; margin-left: 10px; vertical-align: middle;
+  animation: pulse 1.5s infinite;
+}
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
+
+/* Toolbar */
+.table-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
+.toolbar-left { display: flex; align-items: center; gap: 12px; }
+.toolbar-right { display: flex; align-items: center; gap: 10px; }
+.filter-group { display: flex; align-items: center; gap: 6px; }
+.filter-group label { font-size: 13px; font-weight: 500; color: #555; white-space: nowrap; }
+.filter-select { width: 160px; padding: 7px 10px; font-size: 13px; }
+.record-count { font-size: 13px; color: #888; }
+
+/* Table */
+.pending-row td { background: #fffbf0 !important; }
+.dealer-cell { display: flex; flex-direction: column; }
+.dealer-phone { font-size: 11px; color: #aaa; }
+.route-cell { white-space: nowrap; font-size: 12px; }
+.route-from { color: #27ae60; font-weight: 500; }
+.route-to   { color: #3498db; font-weight: 500; }
+.trip-ref { font-size: 11px; color: #3498db; margin-top: 3px; }
+.action-btns { display: flex; gap: 6px; }
+.admin-remarks-cell { font-size: 12px; color: #888; font-style: italic; max-width: 150px; }
+
+/* Accept Modal */
+.modal-accept { max-width: 520px; }
+.req-summary { background: #f8f9fa; border-radius: 8px; padding: 14px 16px; margin-bottom: 16px; }
+.req-sum-row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #eee; font-size: 13px; }
+.req-sum-row:last-child { border-bottom: none; }
+.hint-label { font-size: 11px; color: #3498db; font-weight: 400; }
+.hint { font-size: 12px; color: #888; margin-top: 4px; }

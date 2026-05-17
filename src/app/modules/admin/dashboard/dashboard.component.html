@@ -1,0 +1,201 @@
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Dashboard</h1>
+    <p class="page-subtitle">Welcome back! Here's your operations overview.</p>
+  </div>
+</div>
+
+<div class="alert alert-success" *ngIf="successMsg"><i class="fas fa-check-circle"></i> {{ successMsg }}</div>
+<div class="alert alert-danger"  *ngIf="errorMsg"><i class="fas fa-exclamation-circle"></i> {{ errorMsg }}</div>
+
+<div *ngIf="loading" class="loading-state">
+  <i class="fas fa-spinner fa-spin"></i> Loading dashboard...
+</div>
+
+<div *ngIf="!loading">
+
+  <!-- ── SAND REQUEST NOTIFICATIONS ── -->
+  <div class="sand-notif-section" *ngIf="pendingSandRequests.length > 0">
+    <div class="notif-header">
+      <div class="notif-header-left">
+        <i class="fas fa-layer-group sand-notif-icon"></i>
+        <span>
+          <strong>{{ pendingSandRequests.length }}</strong>
+          new sand request{{ pendingSandRequests.length > 1 ? 's' : '' }} from dealers — review and assign
+        </span>
+      </div>
+      <a routerLink="/admin/sand-requests" class="btn btn-secondary btn-sm">View All Requests</a>
+    </div>
+    <div class="notif-list">
+      <div class="notif-item" *ngFor="let r of pendingSandRequests">
+        <div class="notif-info">
+          <div class="notif-title">
+            <i class="fas fa-handshake"></i>
+            <strong>{{ r.dealer.name }}</strong> — {{ r.sandType.name }}, {{ r.tons }} tons
+          </div>
+          <div class="notif-details">
+            <span><i class="fas fa-map-marker-alt"></i> {{ r.sourceLocation }} → {{ r.destinationLocation }}</span>
+            <span><i class="fas fa-road"></i> {{ r.distanceKm }} km</span>
+            <span><i class="fas fa-calendar"></i> {{ r.requestedDate }}</span>
+            <span><i class="fas fa-rupee-sign"></i> Est: ₹{{ getEstimatedAmount(r) | number }}</span>
+          </div>
+        </div>
+        <a routerLink="/admin/sand-requests" class="btn btn-primary btn-sm">
+          <i class="fas fa-check"></i> Review
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PAYMENT VERIFICATION NOTIFICATIONS ── -->
+  <div class="verify-section" *ngIf="pendingVerifications.length > 0">
+    <div class="notif-header">
+      <div class="notif-header-left">
+        <i class="fas fa-bell verify-icon"></i>
+        <span>
+          <strong>{{ pendingVerifications.length }}</strong>
+          dealer payment{{ pendingVerifications.length > 1 ? 's' : '' }} waiting for verification
+        </span>
+      </div>
+      <a routerLink="/admin/payments" class="btn btn-secondary btn-sm">View All Payments</a>
+    </div>
+    <div class="notif-list">
+      <div class="notif-item" *ngFor="let p of pendingVerifications">
+        <div class="notif-info">
+          <div class="notif-title">
+            <i class="fas fa-handshake"></i>
+            <strong>{{ p.trip.dealer.name }}</strong> submitted a payment
+          </div>
+          <div class="notif-details">
+            <span><i class="fas fa-rupee-sign"></i> Amount: ₹{{ p.pendingVerificationAmount | number }}</span>
+            <span><i class="fas fa-calendar"></i> Trip: {{ p.trip.tripDate }}</span>
+            <span><i class="fas fa-clock"></i> Remaining after: ₹{{ (p.finalAmount - p.paidAmount - (p.pendingVerificationAmount || 0)) | number }}</span>
+          </div>
+        </div>
+        <div class="notif-actions">
+          <button class="btn btn-success btn-sm"
+                  (click)="verifyPayment(p)"
+                  [disabled]="verifyingId === p.id">
+            <i class="fas fa-spinner fa-spin" *ngIf="verifyingId === p.id"></i>
+            <i class="fas fa-check" *ngIf="verifyingId !== p.id"></i>
+            {{ verifyingId === p.id ? 'Verifying...' : 'Verify' }}
+          </button>
+          <button class="btn btn-danger btn-sm" (click)="openRejectPayment(p)">
+            <i class="fas fa-times"></i> Reject
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats Grid -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon blue"><i class="fas fa-truck-moving"></i></div>
+      <div class="stat-info">
+        <div class="stat-value">{{ data.totalTrucks || 0 }}</div>
+        <div class="stat-label">Total Trucks</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon green"><i class="fas fa-id-card"></i></div>
+      <div class="stat-info">
+        <div class="stat-value">{{ data.totalDrivers || 0 }}</div>
+        <div class="stat-label">Total Drivers</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon purple"><i class="fas fa-handshake"></i></div>
+      <div class="stat-info">
+        <div class="stat-value">{{ data.totalDealers || 0 }}</div>
+        <div class="stat-label">Total Dealers</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon teal"><i class="fas fa-route"></i></div>
+      <div class="stat-info">
+        <div class="stat-value">{{ data.totalTrips || 0 }}</div>
+        <div class="stat-label">Total Trips</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon red"><i class="fas fa-clock"></i></div>
+      <div class="stat-info">
+        <div class="stat-value">{{ data.pendingPayments || 0 }}</div>
+        <div class="stat-label">Pending Payments</div>
+      </div>
+    </div>
+    <div class="stat-card" [class.highlight-card]="(data.pendingVerifications || 0) > 0">
+      <div class="stat-icon orange"><i class="fas fa-check-double"></i></div>
+      <div class="stat-info">
+        <div class="stat-value">{{ data.pendingVerifications || 0 }}</div>
+        <div class="stat-label">Awaiting Verification</div>
+      </div>
+    </div>
+    <div class="stat-card" [class.highlight-card]="(data.pendingSandRequests || 0) > 0">
+      <div class="stat-icon purple"><i class="fas fa-layer-group"></i></div>
+      <div class="stat-info">
+        <div class="stat-value">{{ data.pendingSandRequests || 0 }}</div>
+        <div class="stat-label">Sand Requests</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon orange"><i class="fas fa-rupee-sign"></i></div>
+      <div class="stat-info">
+        <div class="stat-value">₹{{ (data.monthlyEarnings || 0) | number:'1.0-0' }}</div>
+        <div class="stat-label">Monthly Earnings</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Links -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Quick Actions</h3>
+    </div>
+    <div class="quick-actions">
+      <a routerLink="/admin/trips" class="quick-action-btn">
+        <i class="fas fa-plus-circle"></i><span>New Trip</span>
+      </a>
+      <a routerLink="/admin/sand-requests" class="quick-action-btn">
+        <i class="fas fa-layer-group"></i><span>Sand Requests</span>
+      </a>
+      <a routerLink="/admin/payments" class="quick-action-btn">
+        <i class="fas fa-rupee-sign"></i><span>Payments</span>
+      </a>
+      <a routerLink="/admin/driver-salary" class="quick-action-btn">
+        <i class="fas fa-wallet"></i><span>Driver Salary</span>
+      </a>
+      <a routerLink="/admin/reports" class="quick-action-btn">
+        <i class="fas fa-download"></i><span>Reports</span>
+      </a>
+    </div>
+  </div>
+
+</div>
+
+<!-- Reject Payment Modal -->
+<div class="modal-overlay" *ngIf="showRejectPayModal" (click)="showRejectPayModal=false">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3 class="modal-title"><i class="fas fa-times-circle"></i> Reject Payment</h3>
+      <button class="modal-close" (click)="showRejectPayModal=false">&times;</button>
+    </div>
+    <p style="color:#555;font-size:14px;margin-bottom:16px">
+      The dealer's payment will be rejected and they will need to resubmit.
+    </p>
+    <div class="form-group">
+      <label>Reason (Optional)</label>
+      <input type="text" class="form-control" [(ngModel)]="rejectReason"
+             placeholder="e.g. Amount not received, Wrong amount">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="showRejectPayModal=false">Cancel</button>
+      <button class="btn btn-danger" (click)="rejectPayment()" [disabled]="rejectingId !== null">
+        <i class="fas fa-times" *ngIf="!rejectingId"></i>
+        <i class="fas fa-spinner fa-spin" *ngIf="rejectingId"></i>
+        {{ rejectingId ? 'Rejecting...' : 'Reject Payment' }}
+      </button>
+    </div>
+  </div>
+</div>

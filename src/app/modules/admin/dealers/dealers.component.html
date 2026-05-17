@@ -1,0 +1,205 @@
+<div class="page-header">
+  <div><h1 class="page-title">Dealers</h1><p class="page-subtitle">Manage your dealers</p></div>
+  <button class="btn btn-primary" (click)="openAdd()"><i class="fas fa-plus"></i> Add Dealer</button>
+</div>
+
+<div class="alert alert-success" *ngIf="successMsg"><i class="fas fa-check-circle"></i> {{ successMsg }}</div>
+<div class="alert alert-danger"  *ngIf="errorMsg && !showModal"><i class="fas fa-exclamation-circle"></i> {{ errorMsg }}</div>
+
+<div class="card">
+  <div class="table-toolbar">
+    <div class="toolbar-left">
+      <div class="search-box">
+        <i class="fas fa-search"></i>
+        <input type="text" placeholder="Search dealers..." [(ngModel)]="searchTerm" (input)="applyFilters()" class="search-input">
+      </div>
+    </div>
+    <span class="record-count">{{ filtered.length }} of {{ dealers.length }} dealers</span>
+  </div>
+  <div *ngIf="loading" class="loading-state"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+  <div class="table-wrapper" *ngIf="!loading">
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Phone</th>
+          <th>Address</th>
+          <th>Login Account</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let d of filtered">
+          <td><strong>{{ d.name }}</strong></td>
+          <td>{{ d.phone }}</td>
+          <td>{{ d.address || '—' }}</td>
+          <td>
+            <ng-container *ngIf="getDealerAccount(d.id) as acc">
+              <div class="account-cell">
+                <span class="account-username">{{ acc.username }}</span>
+                <span class="badge" [class.badge-success]="acc.status" [class.badge-danger]="!acc.status">
+                  {{ acc.status ? 'Active' : 'Inactive' }}
+                </span>
+              </div>
+            </ng-container>
+            <span *ngIf="!getDealerAccount(d.id)" class="no-account">No account</span>
+          </td>
+          <td>
+            <div class="action-btns">
+              <button class="btn btn-warning btn-sm" (click)="openEdit(d)" title="Edit">
+                <i class="fas fa-edit"></i>
+              </button>
+              <ng-container *ngIf="getDealerAccount(d.id) as acc">
+                <button class="btn btn-sm" title="{{ acc.status ? 'Deactivate' : 'Activate' }}"
+                        [class.btn-secondary]="acc.status" [class.btn-success]="!acc.status"
+                        (click)="toggleAccount(acc)">
+                  <i class="fas" [class.fa-ban]="acc.status" [class.fa-check]="!acc.status"></i>
+                </button>
+                <button class="btn btn-info btn-sm" title="Reset Password" (click)="openResetPassword(acc)">
+                  <i class="fas fa-key"></i>
+                </button>
+              </ng-container>
+              <button class="btn btn-danger btn-sm" (click)="delete(d.id)" title="Delete">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+        <tr *ngIf="filtered.length === 0">
+          <td colspan="5" class="empty-state">No dealers found</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="modal-overlay" *ngIf="showModal" (click)="showModal=false">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3 class="modal-title">{{ isEdit ? 'Edit Dealer' : 'Add Dealer' }}</h3>
+      <button class="modal-close" (click)="showModal=false">&times;</button>
+    </div>
+    <div class="alert alert-danger" *ngIf="errorMsg">{{ errorMsg }}</div>
+
+    <form #dealerForm="ngForm" novalidate>
+
+      <div class="section-label">Dealer Information</div>
+
+      <div class="form-group">
+        <label>Dealer Name <span class="req">*</span></label>
+        <input type="text" class="form-control" [(ngModel)]="form.name" name="dname"
+               required #dname="ngModel" [class.is-invalid]="dname.invalid && dname.touched"
+               (blur)="autoFillUsername()" placeholder="Enter dealer name">
+        <div class="field-error" *ngIf="dname.invalid && dname.touched">
+          <i class="fas fa-exclamation-circle"></i> Dealer name is required
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Phone <span class="req">*</span></label>
+        <input type="text" class="form-control" [(ngModel)]="form.phone" name="phone"
+               required pattern="[0-9]{10}" maxlength="10" #phone="ngModel"
+               [class.is-invalid]="phone.invalid && phone.touched" placeholder="10-digit number">
+        <div class="field-error" *ngIf="phone.invalid && phone.touched">
+          <i class="fas fa-exclamation-circle"></i>
+          <span *ngIf="phone.errors?.['required']">Phone is required</span>
+          <span *ngIf="phone.errors?.['pattern']">Enter exactly 10 digits</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Address</label>
+        <input type="text" class="form-control" [(ngModel)]="form.address" name="address" placeholder="Optional">
+      </div>
+
+      <!-- Login Credentials -->
+      <div class="section-label credentials-label">
+        <i class="fas fa-key"></i> Login Credentials
+        <span class="section-hint">{{ isEdit ? 'Leave blank to keep existing' : 'Required for dealer login' }}</span>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Username <span class="req" *ngIf="!isEdit">*</span></label>
+          <div class="username-wrap">
+            <input type="text" class="form-control" [(ngModel)]="form.username" name="username"
+                   [required]="!isEdit" #uname="ngModel"
+                   [class.is-invalid]="(uname.invalid && uname.touched) || usernameStatus === 'taken'"
+                   [class.is-valid]="usernameStatus === 'available'"
+                   (input)="onUsernameInput()" placeholder="e.g. ravi.dealer">
+            <span class="username-status checking" *ngIf="usernameStatus === 'checking'"><i class="fas fa-spinner fa-spin"></i></span>
+            <span class="username-status available" *ngIf="usernameStatus === 'available'"><i class="fas fa-check-circle"></i></span>
+            <span class="username-status taken"     *ngIf="usernameStatus === 'taken'"><i class="fas fa-times-circle"></i></span>
+          </div>
+          <div class="field-error" *ngIf="uname.invalid && uname.touched && !isEdit">
+            <i class="fas fa-exclamation-circle"></i> Username is required
+          </div>
+          <div class="field-error" *ngIf="usernameStatus === 'taken'">
+            <i class="fas fa-exclamation-circle"></i> Username already taken — try another
+          </div>
+          <div class="field-ok" *ngIf="usernameStatus === 'available'">
+            <i class="fas fa-check-circle"></i> Username is available
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Password <span class="req" *ngIf="!isEdit">*</span></label>
+          <div class="input-pwd-wrap">
+            <input [type]="showPassword ? 'text' : 'password'"
+                   class="form-control" [(ngModel)]="form.password" name="password"
+                   [required]="!isEdit" minlength="6" #pwd="ngModel"
+                   [class.is-invalid]="pwd.invalid && pwd.touched"
+                   placeholder="{{ isEdit ? 'Leave blank to keep current' : 'Min 6 characters' }}">
+            <button type="button" class="eye-btn" (click)="showPassword=!showPassword">
+              <i [class]="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+            </button>
+          </div>
+          <div class="field-error" *ngIf="pwd.invalid && pwd.touched">
+            <i class="fas fa-exclamation-circle"></i>
+            <span *ngIf="pwd.errors?.['required']">Password is required</span>
+            <span *ngIf="pwd.errors?.['minlength']">Minimum 6 characters</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="showModal=false">Cancel</button>
+        <button type="button" class="btn btn-primary" (click)="save()"
+                [disabled]="!isEdit && usernameStatus === 'taken'">
+          {{ isEdit ? 'Update Dealer' : 'Add Dealer & Create Account' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Reset Password Modal -->
+<div class="modal-overlay" *ngIf="showResetModal" (click)="showResetModal=false">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3 class="modal-title"><i class="fas fa-key"></i> Reset Password</h3>
+      <button class="modal-close" (click)="showResetModal=false">&times;</button>
+    </div>
+    <p class="reset-info">Resetting password for: <strong>{{ resetUsername }}</strong></p>
+    <div class="form-group">
+      <label>New Password <span class="req">*</span></label>
+      <div class="input-pwd-wrap">
+        <input [type]="showResetPwd ? 'text' : 'password'" class="form-control"
+               [(ngModel)]="resetNewPassword" placeholder="Min 6 characters">
+        <button type="button" class="eye-btn" (click)="showResetPwd=!showResetPwd">
+          <i [class]="showResetPwd ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+        </button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="showResetModal=false">Cancel</button>
+      <button class="btn btn-warning" (click)="resetPassword()"
+              [disabled]="resetting || resetNewPassword.length < 6">
+        <i class="fas fa-key" *ngIf="!resetting"></i>
+        <i class="fas fa-spinner fa-spin" *ngIf="resetting"></i>
+        {{ resetting ? 'Resetting...' : 'Reset Password' }}
+      </button>
+    </div>
+  </div>
+</div>

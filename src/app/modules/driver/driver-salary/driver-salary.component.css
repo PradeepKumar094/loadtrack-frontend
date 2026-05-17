@@ -1,0 +1,24 @@
+.loading-state { text-align: center; padding: 60px; color: #888; }
+
+/* Progress Card */
+.progress-card { margin-bottom: 20px; }
+.progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.progress-label { font-size: 14px; font-weight: 500; color: #555; }
+.progress-pct { font-size: 16px; font-weight: 700; color: #3498db; }
+.progress-bar-wrap { height: 12px; background: #f0f0f0; border-radius: 6px; overflow: hidden; margin-bottom: 8px; }
+.progress-bar-fill { height: 100%; background: linear-gradient(90deg, #27ae60, #2ecc71); border-radius: 6px; transition: width 0.5s ease; }
+.progress-footer { display: flex; justify-content: space-between; font-size: 13px; font-weight: 500; }
+.text-success { color: #27ae60; }
+.text-danger  { color: #e74c3c; }
+
+/* Table */
+.credit-amount { color: #27ae60; font-weight: 600; font-size: 15px; }
+
+/* Empty states */
+.empty-history { text-align: center; padding: 48px; color: #aaa; }
+.empty-history i { font-size: 40px; margin-bottom: 12px; display: block; }
+.empty-history p { font-size: 15px; margin-bottom: 4px; }
+.empty-history small { font-size: 12px; }
+
+.empty-state-box { background: #fff; border-radius: 12px; padding: 60px; text-align: center; color: #aaa; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.empty-state-box i { font-size: 48px; margin-bottom: 12px; display: block; }

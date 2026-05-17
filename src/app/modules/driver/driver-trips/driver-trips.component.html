@@ -1,0 +1,118 @@
+<div class="page-header">
+  <div><h1 class="page-title">My Trips</h1><p class="page-subtitle">View, acknowledge and complete your trips</p></div>
+</div>
+
+<div class="alert alert-success" *ngIf="successMsg"><i class="fas fa-check-circle"></i> {{ successMsg }}</div>
+<div class="alert alert-danger"  *ngIf="errorMsg"><i class="fas fa-exclamation-circle"></i> {{ errorMsg }}</div>
+
+<div *ngIf="loading" class="loading-state"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+
+<div *ngIf="!loading">
+
+  <!-- Summary Cards -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon teal"><i class="fas fa-route"></i></div>
+      <div class="stat-info"><div class="stat-value">{{ totalTrips }}</div><div class="stat-label">Total Trips</div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
+      <div class="stat-info"><div class="stat-value">{{ completedTrips }}</div><div class="stat-label">Completed</div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon orange"><i class="fas fa-weight-hanging"></i></div>
+      <div class="stat-info"><div class="stat-value">{{ totalTons | number:'1.0-1' }}</div><div class="stat-label">Total Tons</div></div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="card">
+    <div class="table-toolbar">
+      <div class="toolbar-left">
+        <div class="search-box">
+          <i class="fas fa-search"></i>
+          <input type="text" placeholder="Search truck, dealer, route..."
+                 [(ngModel)]="searchTerm" (input)="applyFilters()" class="search-input">
+        </div>
+        <div class="filter-group">
+          <label><i class="fas fa-filter"></i> Status:</label>
+          <select class="form-control filter-select" [(ngModel)]="filterStatus" (change)="applyFilters()">
+            <option value="">All</option>
+            <option value="PENDING">Pending</option>
+            <option value="ACKNOWLEDGED">Acknowledged</option>
+            <option value="COMPLETED">Completed</option>
+            <option value="CANCELLED">Cancelled</option>
+          </select>
+        </div>
+      </div>
+      <div class="toolbar-right">
+        <span class="record-count">{{ filtered.length }} of {{ trips.length }} trips</span>
+      </div>
+    </div>
+
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th><th>Date</th><th>Truck</th><th>Dealer</th>
+            <th>Sand</th><th>Tons</th><th>Dist.</th><th>Route</th>
+            <th>Salary</th><th>Status</th><th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let t of filtered; let i = index" [class.new-trip]="!t.driverAcknowledged && t.status==='PENDING'">
+            <td>{{ i+1 }}</td>
+            <td>{{ t.tripDate }}</td>
+            <td><strong>{{ t.truck.truckNumber }}</strong></td>
+            <td>{{ t.dealer.name }}</td>
+            <td>{{ t.sandType.name }}</td>
+            <td>{{ t.tons }}</td>
+            <td>{{ t.distanceKm }} km</td>
+            <td class="route-cell">
+              <span class="route-from">{{ t.sourceLocation }}</span>
+              <i class="fas fa-arrow-right" style="color:#aaa;margin:0 4px;font-size:10px"></i>
+              <span class="route-to">{{ t.destinationLocation }}</span>
+            </td>
+            <td>
+              <div class="salary-cell">
+                <span class="salary-base">₹{{ t.driverSalary | number }}</span>
+                <span class="salary-extra" *ngIf="t.driverExtraAmount > 0">
+                  (+₹{{ t.driverExtraAmount | number }} extra)
+                </span>
+              </div>
+            </td>
+            <td>
+              <span class="badge" [ngClass]="getStatusClass(t.status)">{{ t.status }}</span>
+              <span class="new-badge" *ngIf="!t.driverAcknowledged && t.status==='PENDING'">NEW</span>
+            </td>
+            <td>
+              <!-- Acknowledge button — only for PENDING trips -->
+              <button class="btn btn-info btn-sm" (click)="acknowledge(t)"
+                      *ngIf="t.status==='PENDING' && !t.driverAcknowledged"
+                      title="Acknowledge this trip">
+                <i class="fas fa-thumbs-up"></i> Acknowledge
+              </button>
+              <!-- Complete button — only for ACKNOWLEDGED trips -->
+              <button class="btn btn-success btn-sm" (click)="markComplete(t)"
+                      *ngIf="t.status==='ACKNOWLEDGED' && t.driverAcknowledged && !t.driverCompleted"
+                      title="Mark trip as completed">
+                <i class="fas fa-flag-checkered"></i> Complete
+              </button>
+              <!-- Completed indicator -->
+              <span class="completed-tag" *ngIf="t.status==='COMPLETED'">
+                <i class="fas fa-check-circle"></i> Done
+              </span>
+              <!-- Cancelled -->
+              <span class="cancelled-tag" *ngIf="t.status==='CANCELLED'">
+                <i class="fas fa-ban"></i> Cancelled
+              </span>
+            </td>
+          </tr>
+          <tr *ngIf="filtered.length === 0">
+            <td colspan="11" class="empty-state">No trips found</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

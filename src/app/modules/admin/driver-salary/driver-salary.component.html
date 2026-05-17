@@ -1,0 +1,175 @@
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Driver Salary</h1>
+    <p class="page-subtitle">Pay and track salary for all drivers</p>
+  </div>
+</div>
+
+<div class="alert alert-success" *ngIf="successMsg"><i class="fas fa-check-circle"></i> {{ successMsg }}</div>
+<div class="alert alert-danger"  *ngIf="errorMsg && !showPayModal"><i class="fas fa-exclamation-circle"></i> {{ errorMsg }}</div>
+
+<div *ngIf="loading" class="loading-state"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+
+<div *ngIf="!loading">
+
+  <!-- Summary Cards -->
+  <div class="stats-grid" style="margin-bottom:24px">
+    <div class="stat-card">
+      <div class="stat-icon blue"><i class="fas fa-users"></i></div>
+      <div class="stat-info">
+        <div class="stat-value">{{ summaries.length }}</div>
+        <div class="stat-label">Total Drivers</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
+      <div class="stat-info">
+        <div class="stat-value">₹{{ getTotalCredited() | number }}</div>
+        <div class="stat-label">Total Credited</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon red"><i class="fas fa-hourglass-half"></i></div>
+      <div class="stat-info">
+        <div class="stat-value">₹{{ getTotalPending() | number }}</div>
+        <div class="stat-label">Total Pending</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Driver Salary Cards -->
+  <div *ngFor="let dr of summaries" class="driver-salary-card">
+
+    <!-- Header Row -->
+    <div class="dsc-header" (click)="toggle(dr.driverId)">
+      <div class="dsc-driver-info">
+        <div class="dsc-avatar">{{ dr.driverName.charAt(0).toUpperCase() }}</div>
+        <div>
+          <div class="dsc-name">{{ dr.driverName }}</div>
+          <div class="dsc-rate">₹{{ dr.salaryPerTrip | number }} per trip</div>
+        </div>
+      </div>
+
+      <div class="dsc-pills">
+        <div class="dsc-pill teal">
+          <span class="pill-val">₹{{ dr.totalEarned | number }}</span>
+          <span class="pill-lbl">Earned</span>
+        </div>
+        <div class="dsc-pill green">
+          <span class="pill-val">₹{{ dr.totalCredited | number }}</span>
+          <span class="pill-lbl">Credited</span>
+        </div>
+        <div class="dsc-pill" [class.red]="dr.pendingWithOwner > 0" [class.grey]="dr.pendingWithOwner === 0">
+          <span class="pill-val">₹{{ dr.pendingWithOwner | number }}</span>
+          <span class="pill-lbl">Pending</span>
+        </div>
+      </div>
+
+      <div class="dsc-actions">
+        <button class="btn btn-success btn-sm" (click)="openPay(dr); $event.stopPropagation()"
+                [disabled]="dr.pendingWithOwner <= 0"
+                [title]="dr.pendingWithOwner <= 0 ? 'No pending salary' : 'Pay salary'">
+          <i class="fas fa-rupee-sign"></i> Pay Salary
+        </button>
+        <i class="fas expand-icon"
+           [class.fa-chevron-down]="expandedDriver !== dr.driverId"
+           [class.fa-chevron-up]="expandedDriver === dr.driverId"></i>
+      </div>
+    </div>
+
+    <!-- Expanded: Credit History -->
+    <div class="dsc-body" *ngIf="expandedDriver === dr.driverId">
+      <div class="dsc-body-title"><i class="fas fa-history"></i> Payment History</div>
+
+      <div *ngIf="dr.creditHistory && dr.creditHistory.length > 0" class="table-wrapper">
+        <table>
+          <thead>
+            <tr><th>#</th><th>Date & Time</th><th>Amount Paid</th><th>Remarks</th></tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let c of dr.creditHistory; let i = index">
+              <td>{{ i+1 }}</td>
+              <td>{{ c.creditedAt | date:'dd MMM yyyy, hh:mm a' }}</td>
+              <td class="credit-amount">₹{{ c.amount | number }}</td>
+              <td>{{ c.remarks }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="no-history" *ngIf="!dr.creditHistory || dr.creditHistory.length === 0">
+        <i class="fas fa-info-circle"></i> No salary payments made yet
+      </div>
+    </div>
+  </div>
+
+  <div class="empty-state-box" *ngIf="summaries.length === 0">
+    <i class="fas fa-users"></i>
+    <p>No drivers found. Add drivers first.</p>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════
+     PAY SALARY MODAL
+══════════════════════════════════════════════ -->
+<div class="modal-overlay" *ngIf="showPayModal" (click)="showPayModal=false">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3 class="modal-title"><i class="fas fa-rupee-sign"></i> Pay Driver Salary</h3>
+      <button class="modal-close" (click)="showPayModal=false">&times;</button>
+    </div>
+
+    <div class="alert alert-danger" *ngIf="errorMsg">
+      <i class="fas fa-exclamation-circle"></i> {{ errorMsg }}
+    </div>
+
+    <div *ngIf="selectedDriver" class="pay-summary">
+      <div class="pay-driver-name">
+        <div class="pay-avatar">{{ selectedDriver.driverName.charAt(0).toUpperCase() }}</div>
+        <div>
+          <div class="pay-name">{{ selectedDriver.driverName }}</div>
+          <div class="pay-rate">₹{{ selectedDriver.salaryPerTrip | number }} per trip</div>
+        </div>
+      </div>
+      <div class="pay-breakdown">
+        <div class="pay-row">
+          <span>Total Earned</span>
+          <strong>₹{{ selectedDriver.totalEarned | number }}</strong>
+        </div>
+        <div class="pay-row">
+          <span>Already Credited</span>
+          <strong class="text-success">₹{{ selectedDriver.totalCredited | number }}</strong>
+        </div>
+        <div class="pay-row highlight">
+          <span>Pending Amount</span>
+          <strong class="text-danger">₹{{ selectedDriver.pendingWithOwner | number }}</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group mt-2">
+      <label>Amount to Pay (₹) <span class="req">*</span></label>
+      <input type="number" class="form-control" [(ngModel)]="payAmount"
+             min="1" [max]="selectedDriver?.pendingWithOwner || 0"
+             placeholder="Enter amount">
+      <small class="hint">Max: ₹{{ selectedDriver?.pendingWithOwner | number }}</small>
+    </div>
+
+    <div class="form-group">
+      <label>Remarks (Optional)</label>
+      <input type="text" class="form-control" [(ngModel)]="payRemarks"
+             placeholder="e.g. Weekly salary, Trip bonus, Advance">
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="showPayModal=false">Cancel</button>
+      <button type="button" class="btn btn-success" (click)="pay()"
+              [disabled]="paying || payAmount <= 0">
+        <i class="fas fa-rupee-sign" *ngIf="!paying"></i>
+        <i class="fas fa-spinner fa-spin" *ngIf="paying"></i>
+        {{ paying ? 'Processing...' : 'Confirm Payment' }}
+      </button>
+    </div>
+  </div>
+</div>

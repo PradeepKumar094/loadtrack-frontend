@@ -1,0 +1,33 @@
+.loading-state { text-align: center; padding: 60px; color: #888; }
+.empty-state { text-align: center; color: #aaa; padding: 32px; font-style: italic; }
+.table-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
+.toolbar-left { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.toolbar-right { display: flex; align-items: center; gap: 10px; }
+.search-box { display: flex; align-items: center; gap: 8px; background: #f8f9fa; border: 1px solid #eee; border-radius: 8px; padding: 8px 14px; width: 240px; }
+.search-box i { color: #aaa; }
+.search-input { border: none; background: none; outline: none; font-size: 14px; width: 100%; font-family: 'Inter', sans-serif; }
+.filter-group { display: flex; align-items: center; gap: 6px; }
+.filter-group label { font-size: 13px; font-weight: 500; color: #555; white-space: nowrap; }
+.filter-select { width: 150px; padding: 7px 10px; font-size: 13px; }
+.record-count { font-size: 13px; color: #888; }
+
+/* New trip highlight */
+.new-trip td { background: #fffbf0 !important; }
+.new-badge { display: inline-block; background: #e74c3c; color: #fff; font-size: 9px; font-weight: 700; padding: 2px 5px; border-radius: 4px; margin-left: 4px; vertical-align: middle; animation: pulse 1.5s infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+/* Route */
+.route-cell { white-space: nowrap; font-size: 12px; }
+.route-from { color: #27ae60; font-weight: 500; }
+.route-to   { color: #3498db; font-weight: 500; }
+
+/* Salary */
+.salary-cell { display: flex; flex-direction: column; }
+.salary-base { font-weight: 600; color: #2c3e50; }
+.salary-extra { font-size: 11px; color: #27ae60; }
+
+/* Status tags */
+.completed-tag { color: #27ae60; font-size: 12px; font-weight: 600; }
+.completed-tag i { margin-right: 3px; }
+.cancelled-tag { color: #e74c3c; font-size: 12px; }
+.cancelled-tag i { margin-right: 3px; }

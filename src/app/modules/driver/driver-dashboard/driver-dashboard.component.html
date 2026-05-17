@@ -1,0 +1,190 @@
+<div *ngIf="loading" class="loading-state"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+
+<div *ngIf="!loading">
+
+  <!-- Welcome Banner -->
+  <div class="welcome-banner">
+    <div class="welcome-left">
+      <div class="welcome-avatar">{{ username.charAt(0).toUpperCase() }}</div>
+      <div>
+        <div class="welcome-greeting">{{ getGreeting() }},</div>
+        <div class="welcome-name">{{ username }}</div>
+        <div class="welcome-role"><i class="fas fa-id-card"></i> Driver</div>
+      </div>
+    </div>
+    <div class="welcome-right">
+      <a routerLink="/driver/trips" class="quick-btn">
+        <i class="fas fa-route"></i> My Trips
+        <span class="notif-badge" *ngIf="pendingTrips.length > 0">{{ pendingTrips.length }}</span>
+      </a>
+      <a routerLink="/driver/profile" class="quick-btn outline">
+        <i class="fas fa-user"></i> Profile
+      </a>
+    </div>
+  </div>
+
+  <!-- Success/Error messages -->
+  <div class="alert alert-success" *ngIf="successMsg"><i class="fas fa-check-circle"></i> {{ successMsg }}</div>
+  <div class="alert alert-danger"  *ngIf="errorMsg"><i class="fas fa-exclamation-circle"></i> {{ errorMsg }}</div>
+
+  <!-- ── NEW TRIP NOTIFICATIONS ── -->
+  <div class="notifications-section" *ngIf="pendingTrips.length > 0">
+    <div class="notif-header">
+      <i class="fas fa-bell notif-icon"></i>
+      <span>You have <strong>{{ pendingTrips.length }}</strong> new trip{{ pendingTrips.length > 1 ? 's' : '' }} assigned — please acknowledge</span>
+    </div>
+    <div class="notif-trips">
+      <div class="notif-trip-card" *ngFor="let t of pendingTrips">
+        <div class="notif-trip-info">
+          <div class="notif-trip-title">
+            <i class="fas fa-truck-moving"></i>
+            Trip #{{ t.id }} — {{ t.truck.truckNumber }}
+          </div>
+          <div class="notif-trip-details">
+            <span><i class="fas fa-calendar"></i> {{ t.tripDate }}</span>
+            <span><i class="fas fa-map-marker-alt"></i> {{ t.sourceLocation }} → {{ t.destinationLocation }}</span>
+            <span><i class="fas fa-road"></i> {{ t.distanceKm }} km</span>
+            <span><i class="fas fa-rupee-sign"></i> Salary: ₹{{ t.driverSalary | number }}</span>
+          </div>
+        </div>
+        <!-- Direct acknowledge button — no redirect -->
+        <button class="btn btn-info btn-sm notif-ack-btn"
+                (click)="acknowledge(t)"
+                [disabled]="acknowledging === t.id">
+          <i class="fas fa-spinner fa-spin" *ngIf="acknowledging === t.id"></i>
+          <i class="fas fa-thumbs-up" *ngIf="acknowledging !== t.id"></i>
+          {{ acknowledging === t.id ? 'Acknowledging...' : 'Acknowledge Trip' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SALARY CREDIT NOTIFICATIONS ── -->
+  <div class="salary-notif-section" *ngIf="newCredits.length > 0">
+    <div class="salary-notif-header">
+      <div class="salary-notif-left">
+        <i class="fas fa-rupee-sign salary-notif-icon"></i>
+        <span>
+          Salary credited! You received
+          <strong>{{ newCredits.length }}</strong> payment{{ newCredits.length > 1 ? 's' : '' }}
+        </span>
+      </div>
+      <button class="notif-dismiss-btn" (click)="dismissSalaryNotification()" title="Mark as seen">
+        <i class="fas fa-times"></i> Dismiss
+      </button>
+    </div>
+    <div class="salary-notif-list">
+      <div class="salary-notif-item" *ngFor="let c of newCredits">
+        <div class="salary-notif-amount">₹{{ c.amount | number }}</div>
+        <div class="salary-notif-details">
+          <span>{{ c.remarks }}</span>
+          <span class="salary-notif-time">{{ c.creditedAt | date:'dd MMM yyyy, hh:mm a' }}</span>
+        </div>
+        <i class="fas fa-check-circle notif-check"></i>
+      </div>
+    </div>
+    <div class="salary-notif-footer">
+      <a routerLink="/driver/salary" (click)="dismissSalaryNotification()">
+        View full salary details <i class="fas fa-arrow-right"></i>
+      </a>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon teal"><i class="fas fa-route"></i></div>
+      <div class="stat-info">
+        <div class="stat-value">{{ data.assignedTrips || 0 }}</div>
+        <div class="stat-label">Total Trips</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
+      <div class="stat-info">
+        <div class="stat-value">{{ data.completedTrips || 0 }}</div>
+        <div class="stat-label">Completed</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon orange"><i class="fas fa-clock"></i></div>
+      <div class="stat-info">
+        <div class="stat-value">{{ data.pendingTrips || 0 }}</div>
+        <div class="stat-label">Pending</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon blue"><i class="fas fa-rupee-sign"></i></div>
+      <div class="stat-info">
+        <div class="stat-value">₹{{ (data.totalSalaryEarned || 0) | number }}</div>
+        <div class="stat-label">Total Salary Earned</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick salary snapshot -->
+  <div class="salary-snapshot" *ngIf="salary">
+    <div class="snapshot-item earned">
+      <i class="fas fa-rupee-sign"></i>
+      <div>
+        <div class="snap-val">₹{{ salary.totalEarned | number }}</div>
+        <div class="snap-lbl">Earned</div>
+      </div>
+    </div>
+    <div class="snapshot-item credited">
+      <i class="fas fa-check-circle"></i>
+      <div>
+        <div class="snap-val">₹{{ salary.totalCredited | number }}</div>
+        <div class="snap-lbl">Received</div>
+      </div>
+    </div>
+    <div class="snapshot-item pending">
+      <i class="fas fa-hourglass-half"></i>
+      <div>
+        <div class="snap-val">₹{{ salary.pendingWithOwner | number }}</div>
+        <div class="snap-lbl">Pending</div>
+      </div>
+    </div>
+    <a routerLink="/driver/salary" class="snapshot-link">
+      View Full Salary Details <i class="fas fa-arrow-right"></i>
+    </a>
+  </div>
+
+  <!-- Recent Trips -->
+  <div class="card" *ngIf="recentTrips.length > 0">
+    <div class="card-header">
+      <h3 class="card-title"><i class="fas fa-history"></i> Recent Trips</h3>
+      <a routerLink="/driver/trips" class="btn btn-secondary btn-sm">View All</a>
+    </div>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr><th>Date</th><th>Truck</th><th>Route</th><th>Dist.</th><th>Salary</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let t of recentTrips">
+            <td>{{ t.tripDate }}</td>
+            <td><strong>{{ t.truck.truckNumber }}</strong></td>
+            <td class="route-cell">
+              <span class="route-from">{{ t.sourceLocation }}</span>
+              <i class="fas fa-arrow-right" style="color:#aaa;margin:0 5px;font-size:10px"></i>
+              <span class="route-to">{{ t.destinationLocation }}</span>
+            </td>
+            <td>{{ t.distanceKm }} km</td>
+            <td>
+              <strong>₹{{ t.driverSalary | number }}</strong>
+              <span class="extra-tag" *ngIf="t.driverExtraAmount > 0">+₹{{ t.driverExtraAmount | number }}</span>
+            </td>
+            <td><span class="badge" [ngClass]="getStatusClass(t.status)">{{ t.status }}</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="empty-card" *ngIf="recentTrips.length === 0">
+    <i class="fas fa-route"></i>
+    <p>No trips assigned yet.</p>
+  </div>
+
+</div>

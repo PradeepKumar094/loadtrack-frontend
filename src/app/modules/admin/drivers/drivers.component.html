@@ -1,0 +1,261 @@
+<div class="page-header">
+  <div><h1 class="page-title">Drivers</h1><p class="page-subtitle">Manage your drivers</p></div>
+  <button class="btn btn-primary" (click)="openAdd()"><i class="fas fa-plus"></i> Add Driver</button>
+</div>
+
+<div class="alert alert-success" *ngIf="successMsg"><i class="fas fa-check-circle"></i> {{ successMsg }}</div>
+<div class="alert alert-danger"  *ngIf="errorMsg && !showModal"><i class="fas fa-exclamation-circle"></i> {{ errorMsg }}</div>
+
+<div class="card">
+  <div class="table-toolbar">
+    <div class="toolbar-left">
+      <div class="search-box">
+        <i class="fas fa-search"></i>
+        <input type="text" placeholder="Search name, phone, license..."
+               [(ngModel)]="searchTerm" (input)="applyFilters()" class="search-input">
+      </div>
+      <div class="filter-group">
+        <label><i class="fas fa-filter"></i> Truck:</label>
+        <select class="form-control filter-select" [(ngModel)]="filterAssigned" (change)="applyFilters()">
+          <option value="">All Drivers</option>
+          <option value="yes">Assigned</option>
+          <option value="no">Not Assigned</option>
+        </select>
+      </div>
+    </div>
+    <div class="toolbar-right">
+      <span class="record-count">{{ filtered.length }} of {{ drivers.length }} drivers</span>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="loading-state"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+
+  <div class="table-wrapper" *ngIf="!loading">
+    <table>
+      <thead>
+        <tr>
+          <th class="sortable">Name</th>
+          <th>Phone</th>
+          <th>License No.</th>
+          <th>Address</th>
+          <th>Salary/Trip</th>
+          <th>Assigned Truck</th>
+          <th>Login Account</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let d of filtered">
+          <td><strong>{{ d.name }}</strong></td>
+          <td>{{ d.phone }}</td>
+          <td>{{ d.licenseNumber }}</td>
+          <td>{{ d.address || '—' }}</td>
+          <td>₹{{ d.salaryPerTrip | number }}</td>
+          <td>
+            <span *ngIf="d.assignedTruck" class="badge badge-info">
+              <i class="fas fa-truck"></i> {{ d.assignedTruck.truckNumber }}
+            </span>
+            <span *ngIf="!d.assignedTruck" class="not-assigned">Not Assigned</span>
+          </td>
+          <td>
+            <ng-container *ngIf="getDriverAccount(d.id) as acc">
+              <div class="account-cell">
+                <span class="account-username">{{ acc.username }}</span>
+                <span class="badge" [class.badge-success]="acc.status" [class.badge-danger]="!acc.status">
+                  {{ acc.status ? 'Active' : 'Inactive' }}
+                </span>
+              </div>
+            </ng-container>
+            <span *ngIf="!getDriverAccount(d.id)" class="no-account">No account</span>
+          </td>
+          <td>
+            <div class="action-btns">
+              <button class="btn btn-warning btn-sm" (click)="openEdit(d)" title="Edit"><i class="fas fa-edit"></i></button>
+              <!-- Toggle account -->
+              <ng-container *ngIf="getDriverAccount(d.id) as acc">
+                <button class="btn btn-sm" title="{{ acc.status ? 'Deactivate' : 'Activate' }}"
+                        [class.btn-secondary]="acc.status" [class.btn-success]="!acc.status"
+                        (click)="toggleAccount(acc)">
+                  <i class="fas" [class.fa-ban]="acc.status" [class.fa-check]="!acc.status"></i>
+                </button>
+                <button class="btn btn-info btn-sm" title="Reset Password" (click)="openResetPassword(acc)">
+                  <i class="fas fa-key"></i>
+                </button>
+              </ng-container>
+              <button class="btn btn-danger btn-sm" (click)="delete(d.id)" title="Delete"><i class="fas fa-trash"></i></button>
+            </div>
+          </td>
+        </tr>
+        <tr *ngIf="filtered.length === 0"><td colspan="8" class="empty-state">No drivers found</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" *ngIf="showModal" (click)="showModal=false">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3 class="modal-title">{{ isEdit ? 'Edit Driver' : 'Add Driver' }}</h3>
+      <button class="modal-close" (click)="showModal=false">&times;</button>
+    </div>
+    <div class="alert alert-danger" *ngIf="errorMsg">{{ errorMsg }}</div>
+
+    <form #driverForm="ngForm" novalidate>
+
+      <!-- Driver Info -->
+      <div class="section-label">Driver Information</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Full Name <span class="req">*</span></label>
+          <input type="text" class="form-control" [(ngModel)]="form.name" name="dname"
+                 required #dname="ngModel" [class.is-invalid]="dname.invalid && dname.touched"
+                 (blur)="autoFillUsername()" placeholder="Enter full name">
+          <div class="field-error" *ngIf="dname.invalid && dname.touched">
+            <i class="fas fa-exclamation-circle"></i> Driver name is required
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Phone <span class="req">*</span></label>
+          <input type="text" class="form-control" [(ngModel)]="form.phone" name="phone"
+                 required pattern="[0-9]{10}" maxlength="10" #phone="ngModel"
+                 [class.is-invalid]="phone.invalid && phone.touched" placeholder="10-digit number">
+          <div class="field-error" *ngIf="phone.invalid && phone.touched">
+            <i class="fas fa-exclamation-circle"></i>
+            <span *ngIf="phone.errors?.['required']">Phone is required</span>
+            <span *ngIf="phone.errors?.['pattern']">Enter exactly 10 digits</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>License Number <span class="req">*</span></label>
+          <input type="text" class="form-control" [(ngModel)]="form.licenseNumber" name="licenseNumber"
+                 required #license="ngModel" [class.is-invalid]="license.invalid && license.touched"
+                 placeholder="e.g. TN0120230012345">
+          <div class="field-error" *ngIf="license.invalid && license.touched">
+            <i class="fas fa-exclamation-circle"></i> License number is required
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Salary Per Trip (₹) <span class="req">*</span></label>
+          <input type="number" class="form-control" [(ngModel)]="form.salaryPerTrip" name="salaryPerTrip"
+                 required min="0" #salary="ngModel" [class.is-invalid]="salary.invalid && salary.touched">
+          <div class="field-error" *ngIf="salary.invalid && salary.touched">
+            <i class="fas fa-exclamation-circle"></i>
+            <span *ngIf="salary.errors?.['required']">Salary is required</span>
+            <span *ngIf="salary.errors?.['min']">Cannot be negative</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Address</label>
+        <input type="text" class="form-control" [(ngModel)]="form.address" name="address" placeholder="Optional">
+      </div>
+
+      <div class="form-group">
+        <label>Assign Truck (Optional)</label>
+        <select class="form-control" [(ngModel)]="form.assignedTruckId" name="assignedTruckId">
+          <option [ngValue]="null">— None —</option>
+          <option *ngFor="let t of trucks" [ngValue]="t.id">{{ t.truckNumber }} – {{ t.model }} ({{ t.capacityTons }} tons)</option>
+        </select>
+      </div>
+
+      <!-- Login Credentials -->
+      <div class="section-label credentials-label">
+        <i class="fas fa-key"></i> Login Credentials
+        <span class="section-hint">{{ isEdit ? 'Leave blank to keep existing password' : 'Required for driver login' }}</span>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Username <span class="req">*</span></label>
+          <div class="username-wrap">
+            <input type="text" class="form-control" [(ngModel)]="form.username" name="username"
+                   [required]="!isEdit" #uname="ngModel"
+                   [class.is-invalid]="(uname.invalid && uname.touched) || usernameStatus === 'taken'"
+                   [class.is-valid]="usernameStatus === 'available'"
+                   (input)="onUsernameInput()" placeholder="e.g. john.driver">
+            <span class="username-status checking" *ngIf="usernameStatus === 'checking'">
+              <i class="fas fa-spinner fa-spin"></i>
+            </span>
+            <span class="username-status available" *ngIf="usernameStatus === 'available'">
+              <i class="fas fa-check-circle"></i>
+            </span>
+            <span class="username-status taken" *ngIf="usernameStatus === 'taken'">
+              <i class="fas fa-times-circle"></i>
+            </span>
+          </div>
+          <div class="field-error" *ngIf="uname.invalid && uname.touched && !isEdit">
+            <i class="fas fa-exclamation-circle"></i> Username is required
+          </div>
+          <div class="field-error" *ngIf="usernameStatus === 'taken'">
+            <i class="fas fa-exclamation-circle"></i> Username already taken — try another
+          </div>
+          <div class="field-ok" *ngIf="usernameStatus === 'available'">
+            <i class="fas fa-check-circle"></i> Username is available
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Password <span class="req" *ngIf="!isEdit">*</span></label>
+          <div class="input-pwd-wrap">
+            <input [type]="showPassword ? 'text' : 'password'"
+                   class="form-control" [(ngModel)]="form.password" name="password"
+                   [required]="!isEdit" minlength="6" #pwd="ngModel"
+                   [class.is-invalid]="pwd.invalid && pwd.touched"
+                   placeholder="{{ isEdit ? 'Leave blank to keep current' : 'Min 6 characters' }}">
+            <button type="button" class="eye-btn" (click)="showPassword=!showPassword">
+              <i [class]="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+            </button>
+          </div>
+          <div class="field-error" *ngIf="pwd.invalid && pwd.touched">
+            <i class="fas fa-exclamation-circle"></i>
+            <span *ngIf="pwd.errors?.['required']">Password is required</span>
+            <span *ngIf="pwd.errors?.['minlength']">Minimum 6 characters</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="showModal=false">Cancel</button>
+        <button type="button" class="btn btn-primary" (click)="save()"
+                [disabled]="(!isEdit && usernameStatus === 'taken')">
+          {{ isEdit ? 'Update Driver' : 'Add Driver & Create Account' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Reset Password Modal -->
+<div class="modal-overlay" *ngIf="showResetModal" (click)="showResetModal=false">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3 class="modal-title"><i class="fas fa-key"></i> Reset Password</h3>
+      <button class="modal-close" (click)="showResetModal=false">&times;</button>
+    </div>
+    <p class="reset-info">Resetting password for: <strong>{{ resetUsername }}</strong></p>
+    <div class="form-group">
+      <label>New Password <span class="req">*</span></label>
+      <div class="input-pwd-wrap">
+        <input [type]="showResetPwd ? 'text' : 'password'" class="form-control"
+               [(ngModel)]="resetNewPassword" placeholder="Min 6 characters">
+        <button type="button" class="eye-btn" (click)="showResetPwd=!showResetPwd">
+          <i [class]="showResetPwd ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+        </button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="showResetModal=false">Cancel</button>
+      <button class="btn btn-warning" (click)="resetPassword()"
+              [disabled]="resetting || resetNewPassword.length < 6">
+        <i class="fas fa-key" *ngIf="!resetting"></i>
+        <i class="fas fa-spinner fa-spin" *ngIf="resetting"></i>
+        {{ resetting ? 'Resetting...' : 'Reset Password' }}
+      </button>
+    </div>
+  </div>
+</div>

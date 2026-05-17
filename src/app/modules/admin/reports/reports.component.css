@@ -1,0 +1,163 @@
+/* ── Tabs ── */
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 20px;
+  background: #fff;
+  padding: 6px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  width: fit-content;
+}
+.tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 22px;
+  border: none;
+  border-radius: 7px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  background: transparent;
+  color: #666;
+  transition: all 0.2s;
+}
+.tab-btn:hover { background: #f0f4f8; color: #2c3e50; }
+.tab-btn.active { background: #3498db; color: #fff; }
+.tab-btn i { font-size: 14px; }
+
+/* ── Tab Content ── */
+.tab-content { animation: fadeIn 0.2s ease; }
+
+/* ── Trips Tab ── */
+.reports-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; }
+.report-card { background: #fff; border-radius: 12px; padding: 28px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+.report-icon { width: 56px; height: 56px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 24px; color: #fff; margin-bottom: 16px; }
+.report-icon.teal { background: linear-gradient(135deg, #1abc9c, #16a085); }
+.report-icon.red  { background: linear-gradient(135deg, #e74c3c, #c0392b); }
+.report-card h3 { font-size: 17px; font-weight: 600; color: #2c3e50; margin-bottom: 8px; }
+.report-card p  { color: #888; font-size: 13px; margin-bottom: 16px; line-height: 1.5; }
+.date-filter { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+
+/* ── Section Toolbar ── */
+.section-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.section-info { font-size: 14px; color: #555; font-weight: 500; }
+.section-info i { margin-right: 6px; color: #3498db; }
+
+/* ── Report Section (accordion) ── */
+.report-section {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+
+.report-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  cursor: pointer;
+  transition: background 0.15s;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.report-section-header:hover { background: #f8f9fa; }
+
+/* Driver/Dealer info */
+.driver-info { display: flex; align-items: center; gap: 14px; min-width: 200px; }
+.driver-avatar {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3498db, #2980b9);
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; font-weight: 700;
+  flex-shrink: 0;
+}
+.dealer-avatar { background: linear-gradient(135deg, #9b59b6, #8e44ad); }
+.driver-name { font-size: 15px; font-weight: 600; color: #2c3e50; }
+.driver-meta { font-size: 12px; color: #888; margin-top: 2px; }
+
+/* Summary Pills */
+.summary-pills { display: flex; gap: 8px; flex-wrap: wrap; flex: 1; justify-content: center; }
+.pill {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 6px 14px;
+  border-radius: 8px;
+  min-width: 80px;
+}
+.pill.blue   { background: #ebf5fb; }
+.pill.green  { background: #eafaf1; }
+.pill.orange { background: #fef9e7; }
+.pill.teal   { background: #e8f8f5; }
+.pill.red    { background: #fdedec; }
+.pill.purple { background: #f5eef8; }
+.pill-val { font-size: 14px; font-weight: 700; color: #2c3e50; }
+.pill-lbl { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+
+/* Header Actions */
+.header-actions { display: flex; align-items: center; gap: 10px; }
+.expand-icon { font-size: 14px; color: #aaa; transition: transform 0.2s; }
+
+/* Section Body */
+.report-section-body { padding: 0 20px 20px; border-top: 1px solid #f0f0f0; }
+
+/* Salary Summary Cards */
+.salary-summary {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 16px 0;
+}
+.salary-card {
+  flex: 1;
+  min-width: 120px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 12px 16px;
+  text-align: center;
+  border-top: 3px solid #ddd;
+}
+.salary-card.green  { border-top-color: #27ae60; background: #eafaf1; }
+.salary-card.red    { border-top-color: #e74c3c; background: #fdedec; }
+.salary-card.blue   { border-top-color: #3498db; background: #ebf5fb; }
+.salary-card.teal   { border-top-color: #1abc9c; background: #e8f8f5; }
+.salary-card.orange { border-top-color: #f39c12; background: #fef9e7; }
+.salary-card.purple { border-top-color: #9b59b6; background: #f5eef8; }
+.salary-label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+.salary-value { font-size: 16px; font-weight: 700; color: #2c3e50; }
+
+/* Table cells */
+.route-cell { white-space: nowrap; }
+.route-from { color: #27ae60; font-weight: 500; }
+.route-arrow { color: #aaa; margin: 0 6px; font-size: 11px; }
+.route-to { color: #3498db; font-weight: 500; }
+.salary-earned { color: #27ae60; font-weight: 600; }
+.salary-na { color: #ccc; }
+.paid-cell { color: #27ae60; font-weight: 600; }
+.pending-cell { color: #e74c3c; font-weight: 600; }
+.interest-cell { color: #f39c12; font-weight: 600; }
+.overdue-text { color: #e74c3c; font-weight: 600; }
+.row-overdue td { background: #fff5f5 !important; }
+
+/* Empty states */
+.loading-state { text-align: center; padding: 40px; color: #888; }
+.empty-state { text-align: center; color: #aaa; padding: 24px; font-style: italic; }
+.empty-state-box {
+  text-align: center;
+  padding: 60px;
+  color: #aaa;
+  background: #fff;
+  border-radius: 10px;
+}
+.empty-state-box i { font-size: 48px; margin-bottom: 12px; display: block; }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }

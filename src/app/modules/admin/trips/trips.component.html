@@ -1,0 +1,298 @@
+<div class="page-header">
+  <div><h1 class="page-title">Trips</h1><p class="page-subtitle">Manage sand transportation trips</p></div>
+  <button class="btn btn-primary" (click)="openAdd()"><i class="fas fa-plus"></i> New Trip</button>
+</div>
+
+<div class="alert alert-success" *ngIf="successMsg"><i class="fas fa-check-circle"></i> {{ successMsg }}</div>
+<div class="alert alert-danger" *ngIf="errorMsg && !showModal"><i class="fas fa-exclamation-circle"></i> {{ errorMsg }}</div>
+
+<div class="card">
+  <div class="table-toolbar">
+    <div class="toolbar-left">
+      <!-- Column Search -->
+      <div class="column-search">
+        <select class="form-control col-select" [(ngModel)]="searchColumn" (change)="applyFilters()">
+          <option *ngFor="let col of searchColumns" [value]="col.value">{{ col.label }}</option>
+        </select>
+        <div class="search-box">
+          <i class="fas fa-search"></i>
+          <input type="text" [placeholder]="getSearchPlaceholder()"
+                 [(ngModel)]="searchTerm" (input)="applyFilters()" class="search-input">
+          <button class="clear-search" *ngIf="searchTerm" (click)="searchTerm=''; applyFilters()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+      <!-- Status Filter -->
+      <div class="filter-group">
+        <label><i class="fas fa-filter"></i> Status:</label>
+        <select class="form-control filter-select" [(ngModel)]="filterStatus" (change)="applyFilters()">
+          <option value="">All Status</option>
+          <option value="PENDING">Pending</option>
+          <option value="COMPLETED">Completed</option>
+          <option value="CANCELLED">Cancelled</option>
+        </select>
+      </div>
+      <!-- Sand Type Filter -->
+      <div class="filter-group">
+        <label><i class="fas fa-layer-group"></i> Sand:</label>
+        <select class="form-control filter-select" [(ngModel)]="filterSandType" (change)="applyFilters()">
+          <option [ngValue]="0">All Types</option>
+          <option *ngFor="let s of sandTypes" [ngValue]="s.id">{{ s.name }}</option>
+        </select>
+      </div>
+    </div>
+    <div class="toolbar-right">
+      <span class="record-count">{{ filtered.length }} of {{ trips.length }} trips</span>
+      <button class="btn btn-secondary btn-sm" (click)="clearFilters()" *ngIf="hasActiveFilters">
+        <i class="fas fa-times"></i> Clear All
+      </button>
+    </div>
+  </div>
+  <div *ngIf="loading" class="loading-state"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+  <div class="table-wrapper" *ngIf="!loading">
+    <table>
+      <thead>
+        <tr>
+          <th class="sortable" (click)="sortBy('tripDate')">Date <i [class]="getSortIcon('tripDate')"></i></th>
+          <th class="sortable" (click)="sortBy('truck.truckNumber')">Truck <i [class]="getSortIcon('truck.truckNumber')"></i></th>
+          <th class="sortable" (click)="sortBy('driver.name')">Driver <i [class]="getSortIcon('driver.name')"></i></th>
+          <th class="sortable" (click)="sortBy('dealer.name')">Dealer <i [class]="getSortIcon('dealer.name')"></i></th>
+          <th class="sortable" (click)="sortBy('sandType.name')">Sand Type <i [class]="getSortIcon('sandType.name')"></i></th>
+          <th class="sortable" (click)="sortBy('tons')">Tons <i [class]="getSortIcon('tons')"></i></th>
+          <th>Source</th>
+          <th>Destination</th>
+          <th class="sortable" (click)="sortBy('ratePerTon')">Rate/Ton <i [class]="getSortIcon('ratePerTon')"></i></th>
+          <th class="sortable" (click)="sortBy('totalAmount')">Total Amount <i [class]="getSortIcon('totalAmount')"></i></th>
+          <th class="sortable" (click)="sortBy('status')">Status <i [class]="getSortIcon('status')"></i></th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let t of filtered">
+          <td>{{ t.tripDate }}</td>
+          <td><strong>{{ t.truck.truckNumber }}</strong></td>
+          <td>{{ t.driver.name }}</td>
+          <td>{{ t.dealer.name }}</td>
+          <td>{{ t.sandType.name }}</td>
+          <td>{{ t.tons }}</td>
+          <td>{{ t.sourceLocation }}</td>
+          <td>{{ t.destinationLocation }}</td>
+          <td>₹{{ t.ratePerTon | number }}</td>
+          <td><strong>₹{{ t.totalAmount | number }}</strong></td>
+          <td><span class="badge" [ngClass]="getStatusClass(t.status)">{{ t.status }}</span></td>
+          <td>
+            <button class="btn btn-warning btn-sm" (click)="openEdit(t)" title="Edit"><i class="fas fa-edit"></i></button>
+            <button class="btn btn-danger btn-sm" (click)="delete(t.id)" title="Delete" style="margin-left:6px"><i class="fas fa-trash"></i></button>
+          </td>
+        </tr>
+        <tr *ngIf="filtered.length === 0"><td colspan="12" class="empty-state">No trips found</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" *ngIf="showModal" (click)="showModal = false">
+  <div class="modal modal-lg" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3 class="modal-title">{{ isEdit ? 'Edit Trip' : 'Create New Trip' }}</h3>
+      <button class="modal-close" (click)="showModal = false">&times;</button>
+    </div>
+    <div class="alert alert-danger" *ngIf="errorMsg">{{ errorMsg }}</div>
+
+    <form (ngSubmit)="save()" #tripForm="ngForm" novalidate>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Tons Required <span class="required">*</span></label>
+          <input type="number" class="form-control" [(ngModel)]="form.tons"
+                 name="tons" required min="0.1" step="0.1" #tons="ngModel"
+                 [class.is-invalid]="tons.invalid && tons.touched"
+                 (input)="onTonsChange()" placeholder="Enter tons first">
+          <div class="error-msg" *ngIf="tons.invalid && tons.touched">
+            <span *ngIf="tons.errors?.['required']">Tons is required</span>
+            <span *ngIf="tons.errors?.['min']">Tons must be greater than 0</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Trip Date <span class="required">*</span></label>
+          <input type="date" class="form-control" [(ngModel)]="form.tripDate"
+                 name="tripDate" required #tripDate="ngModel"
+                 [class.is-invalid]="tripDate.invalid && tripDate.touched">
+          <div class="error-msg" *ngIf="tripDate.invalid && tripDate.touched">
+            <span *ngIf="tripDate.errors?.['required']">Trip date is required</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Distance field -->
+      <div class="form-group">
+        <label>Distance (km) <span class="required">*</span></label>
+        <div class="input-icon-wrap-trip">
+          <i class="fas fa-road"></i>
+          <input type="number" class="form-control" [(ngModel)]="form.distanceKm"
+                 name="distanceKm" required min="0" step="0.1" #distKm="ngModel"
+                 [class.is-invalid]="distKm.invalid && distKm.touched"
+                 (input)="onDistanceChange()" placeholder="e.g. 25">
+        </div>
+        <div class="error-msg" *ngIf="distKm.invalid && distKm.touched">
+          <span *ngIf="distKm.errors?.['required']">Distance is required</span>
+        </div>
+      </div>
+
+      <!-- Capacity Warning -->
+      <div class="alert alert-warning" *ngIf="capacityWarning">
+        <i class="fas fa-exclamation-triangle"></i> {{ capacityWarning }}
+      </div>
+
+      <!-- Truck dropdown — filtered by capacity -->
+      <div class="form-group">
+        <label>
+          Truck <span class="required">*</span>
+          <span class="hint-label" *ngIf="form.tons > 0">
+            — showing trucks with capacity ≥ {{ form.tons }} tons
+          </span>
+        </label>
+        <select class="form-control" [(ngModel)]="form.truckId" name="truckId"
+                required #truckId="ngModel" (change)="onTruckChange()"
+                [class.is-invalid]="truckId.invalid && truckId.touched">
+          <option [ngValue]="0" disabled>
+            {{ form.tons > 0 ? 'Select suitable truck' : 'Enter tons first to see available trucks' }}
+          </option>
+          <option *ngFor="let t of suitableTrucks" [ngValue]="t.id">
+            {{ t.truckNumber }} – {{ t.model }} ({{ t.capacityTons }} tons capacity)
+          </option>
+        </select>
+        <div class="error-msg" *ngIf="truckId.invalid && truckId.touched">
+          <span *ngIf="truckId.errors?.['required']">Please select a truck</span>
+        </div>
+        <div class="no-trucks-msg" *ngIf="form.tons > 0 && suitableTrucks.length === 0">
+          <i class="fas fa-exclamation-circle"></i>
+          No available trucks with capacity ≥ {{ form.tons }} tons
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Driver <span class="required">*</span></label>
+          <select class="form-control" [(ngModel)]="form.driverId" name="driverId"
+                  required #driverId="ngModel"
+                  [class.is-invalid]="driverId.invalid && driverId.touched">
+            <option [ngValue]="0" disabled>Select Driver</option>
+            <option *ngFor="let d of drivers" [ngValue]="d.id">{{ d.name }} – {{ d.phone }}</option>
+          </select>
+          <div class="error-msg" *ngIf="driverId.invalid && driverId.touched">
+            <span *ngIf="driverId.errors?.['required']">Please select a driver</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Dealer <span class="required">*</span></label>
+          <select class="form-control" [(ngModel)]="form.dealerId" name="dealerId"
+                  required #dealerId="ngModel"
+                  [class.is-invalid]="dealerId.invalid && dealerId.touched">
+            <option [ngValue]="0" disabled>Select Dealer</option>
+            <option *ngFor="let d of dealers" [ngValue]="d.id">{{ d.name }}</option>
+          </select>
+          <div class="error-msg" *ngIf="dealerId.invalid && dealerId.touched">
+            <span *ngIf="dealerId.errors?.['required']">Please select a dealer</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Sand Type <span class="required">*</span></label>
+          <select class="form-control" [(ngModel)]="form.sandTypeId" name="sandTypeId"
+                  required #sandTypeId="ngModel" (change)="onSandTypeChange()"
+                  [class.is-invalid]="sandTypeId.invalid && sandTypeId.touched">
+            <option [ngValue]="0" disabled>Select Sand Type</option>
+            <option *ngFor="let s of sandTypes" [ngValue]="s.id">
+              {{ s.name }} – ₹{{ s.pricePerTon }}/ton
+            </option>
+          </select>
+          <div class="error-msg" *ngIf="sandTypeId.invalid && sandTypeId.touched">
+            <span *ngIf="sandTypeId.errors?.['required']">Please select sand type</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select class="form-control" [(ngModel)]="form.status" name="status">
+            <option value="PENDING">Pending</option>
+            <option value="COMPLETED">Completed</option>
+            <option value="CANCELLED">Cancelled</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Source Location <span class="required">*</span></label>
+          <input type="text" class="form-control" [(ngModel)]="form.sourceLocation"
+                 name="sourceLocation" required #sourceLocation="ngModel"
+                 [class.is-invalid]="sourceLocation.invalid && sourceLocation.touched"
+                 placeholder="e.g. Quarry, Salem">
+          <div class="error-msg" *ngIf="sourceLocation.invalid && sourceLocation.touched">
+            <span *ngIf="sourceLocation.errors?.['required']">Source location is required</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Destination Location <span class="required">*</span></label>
+          <input type="text" class="form-control" [(ngModel)]="form.destinationLocation"
+                 name="destinationLocation" required #destinationLocation="ngModel"
+                 [class.is-invalid]="destinationLocation.invalid && destinationLocation.touched"
+                 placeholder="e.g. Construction Site, Chennai">
+          <div class="error-msg" *ngIf="destinationLocation.invalid && destinationLocation.touched">
+            <span *ngIf="destinationLocation.errors?.['required']">Destination is required</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Auto Calculated Amount -->
+      <div class="amount-preview" *ngIf="calculatedAmount > 0">
+        <div class="amount-row">
+          <i class="fas fa-calculator"></i>
+          <span>Base Amount: <strong>₹{{ baseAmount | number }}</strong></span>
+          <span class="amount-formula">({{ form.tons }} tons × ₹{{ form.tons > 0 ? (baseAmount / form.tons | number:'1.0-0') : 0 }}/ton)</span>
+        </div>
+        <div class="amount-row extra" *ngIf="extraCharge > 0">
+          <i class="fas fa-road"></i>
+          <span>Extra Distance Charge: <strong>₹{{ extraCharge | number }}</strong></span>
+          <span class="amount-formula">({{ form.distanceKm - baseDistanceKm | number:'1.0-1' }} km × ₹{{ ratePerExtraKm }}/km)</span>
+        </div>
+        <div class="amount-row driver-share" *ngIf="extraCharge > 0">
+          <i class="fas fa-id-card"></i>
+          <span>Driver Extra Share (50%): <strong>₹{{ driverExtraShare | number }}</strong></span>
+        </div>
+        <div class="amount-row total">
+          <i class="fas fa-rupee-sign"></i>
+          <span>Total Trip Amount: <strong>₹{{ calculatedAmount | number }}</strong></span>
+        </div>
+      </div>
+
+      <!-- Initial Payment Section (only on create) -->
+      <div class="payment-section" *ngIf="!isEdit">
+        <h4><i class="fas fa-rupee-sign"></i> Initial Payment (Optional)</h4>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Amount Paid Upfront (₹)</label>
+            <input type="number" class="form-control" [(ngModel)]="form.initialPayment"
+                   name="initialPayment" min="0" step="0.01" placeholder="0 if not paid yet">
+          </div>
+          <div class="form-group">
+            <label>Remarks</label>
+            <input type="text" class="form-control" [(ngModel)]="form.paymentRemarks"
+                   name="paymentRemarks" placeholder="e.g. Advance paid, Full payment">
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="showModal = false">Cancel</button>
+        <button type="submit" class="btn btn-primary">
+          {{ isEdit ? 'Update Trip' : 'Create Trip' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

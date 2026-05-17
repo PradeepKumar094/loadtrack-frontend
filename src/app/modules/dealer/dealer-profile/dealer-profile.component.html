@@ -1,0 +1,85 @@
+<div class="page-header">
+  <div><h1 class="page-title">My Profile</h1><p class="page-subtitle">Manage your account</p></div>
+</div>
+
+<div *ngIf="loading" class="loading-state"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+
+<div *ngIf="!loading && profile" class="profile-layout">
+  <div class="profile-card">
+    <div class="avatar-section">
+      <div class="avatar-wrapper">
+        <img *ngIf="profile.profilePhoto" [src]="profile.profilePhoto" alt="Profile" class="avatar-img">
+        <div *ngIf="!profile.profilePhoto" class="avatar-initials dealer">{{ getInitials() }}</div>
+      </div>
+      <div class="profile-name">{{ profile.username }}</div>
+      <span class="badge badge-info role-badge">{{ profile.role.name }}</span>
+      <div class="status-row"><span class="status-dot"></span> Active</div>
+    </div>
+    <div class="profile-info">
+      <div class="info-row"><i class="fas fa-user"></i><div><div class="info-label">Username</div><div class="info-value">{{ profile.username }}</div></div></div>
+      <div class="info-row"><i class="fas fa-phone"></i><div><div class="info-label">Phone</div><div class="info-value" [class.not-set]="!profile.phone">{{ profile.phone || 'Not set' }}</div></div></div>
+      <div class="info-row"><i class="fas fa-shield-alt"></i><div><div class="info-label">Role</div><div class="info-value">{{ profile.role.name }}</div></div></div>
+    </div>
+    <div class="profile-actions">
+      <button class="action-btn dealer-btn" [class.active]="activePanel === 'edit'" (click)="openEdit()">
+        <i class="fas fa-user-edit"></i><span>{{ activePanel === 'edit' ? 'Cancel Edit' : 'Edit Profile' }}</span><i class="fas fa-chevron-right arrow-icon"></i>
+      </button>
+      <button class="action-btn dealer-btn" [class.active]="activePanel === 'password'" (click)="openChangePassword()">
+        <i class="fas fa-lock"></i><span>{{ activePanel === 'password' ? 'Cancel' : 'Change Password' }}</span><i class="fas fa-chevron-right arrow-icon"></i>
+      </button>
+    </div>
+  </div>
+
+  <div class="panel-area">
+    <div class="alert alert-success" *ngIf="profileSuccessMsg"><i class="fas fa-check-circle"></i> {{ profileSuccessMsg }}</div>
+    <div class="alert alert-success" *ngIf="pwdSuccessMsg"><i class="fas fa-check-circle"></i> {{ pwdSuccessMsg }}</div>
+
+    <div class="empty-panel" *ngIf="!activePanel">
+      <div class="empty-panel-icon dealer-icon"><i class="fas fa-user-circle"></i></div>
+      <h3>Hello, {{ profile.username }}</h3>
+      <p>Select an option to edit your profile or change your password.</p>
+    </div>
+
+    <div class="card panel-card" *ngIf="activePanel === 'edit'">
+      <div class="card-header"><h3 class="card-title"><i class="fas fa-user-edit"></i> Edit Profile</h3></div>
+      <div class="alert alert-danger" *ngIf="profileErrorMsg"><i class="fas fa-exclamation-circle"></i> {{ profileErrorMsg }}</div>
+      <div class="form-group">
+        <label>Profile Photo</label>
+        <div class="photo-row">
+          <div class="photo-preview"><img *ngIf="editPhoto" [src]="editPhoto" alt="Preview"><div *ngIf="!editPhoto" class="photo-placeholder"><i class="fas fa-image"></i></div></div>
+          <div class="photo-btns">
+            <label class="btn btn-secondary btn-sm"><i class="fas fa-upload"></i> Upload<input type="file" accept="image/*" (change)="onPhotoSelected($event)" hidden></label>
+            <button class="btn btn-danger btn-sm" *ngIf="editPhoto" (click)="editPhoto=''"><i class="fas fa-trash"></i></button>
+            <small class="photo-hint">Max 2MB</small>
+          </div>
+        </div>
+      </div>
+      <div class="form-group"><label>Username <span class="req">*</span></label><div class="input-icon-wrap"><i class="fas fa-user"></i><input type="text" class="form-control" [(ngModel)]="editUsername"></div></div>
+      <div class="form-group"><label>Phone</label><div class="input-icon-wrap"><i class="fas fa-phone"></i><input type="text" class="form-control" [(ngModel)]="editPhone" maxlength="10" placeholder="10-digit number"></div></div>
+      <div class="panel-footer">
+        <button class="btn btn-secondary" (click)="activePanel=null">Cancel</button>
+        <button class="btn btn-primary" (click)="saveProfile()" [disabled]="savingProfile || !editUsername">
+          <i class="fas fa-save" *ngIf="!savingProfile"></i><i class="fas fa-spinner fa-spin" *ngIf="savingProfile"></i>
+          {{ savingProfile ? 'Saving...' : 'Save Changes' }}
+        </button>
+      </div>
+    </div>
+
+    <div class="card panel-card" *ngIf="activePanel === 'password'">
+      <div class="card-header"><h3 class="card-title"><i class="fas fa-lock"></i> Change Password</h3></div>
+      <div class="alert alert-danger" *ngIf="pwdErrorMsg"><i class="fas fa-exclamation-circle"></i> {{ pwdErrorMsg }}</div>
+      <div class="form-group"><label>Current Password <span class="req">*</span></label><div class="input-icon-wrap"><i class="fas fa-lock"></i><input [type]="showCurrentPwd?'text':'password'" class="form-control" [(ngModel)]="currentPassword" placeholder="Current password"><button class="eye-btn" (click)="showCurrentPwd=!showCurrentPwd"><i [class]="showCurrentPwd?'fas fa-eye-slash':'fas fa-eye'"></i></button></div></div>
+      <div class="form-group"><label>New Password <span class="req">*</span></label><div class="input-icon-wrap"><i class="fas fa-key"></i><input [type]="showNewPwd?'text':'password'" class="form-control" [(ngModel)]="newPassword" placeholder="Min 6 characters"><button class="eye-btn" (click)="showNewPwd=!showNewPwd"><i [class]="showNewPwd?'fas fa-eye-slash':'fas fa-eye'"></i></button></div></div>
+      <div class="form-group"><label>Confirm Password <span class="req">*</span></label><div class="input-icon-wrap"><i class="fas fa-key"></i><input [type]="showConfirmPwd?'text':'password'" class="form-control" [(ngModel)]="confirmPassword" placeholder="Re-enter password"><button class="eye-btn" (click)="showConfirmPwd=!showConfirmPwd"><i [class]="showConfirmPwd?'fas fa-eye-slash':'fas fa-eye'"></i></button></div>
+        <div class="pwd-match" *ngIf="confirmPassword"><span class="match-ok" *ngIf="newPassword===confirmPassword"><i class="fas fa-check-circle"></i> Match</span><span class="match-fail" *ngIf="newPassword!==confirmPassword"><i class="fas fa-times-circle"></i> No match</span></div>
+      </div>
+      <div class="panel-footer">
+        <button class="btn btn-secondary" (click)="activePanel=null">Cancel</button>
+        <button class="btn btn-warning" (click)="changePassword()" [disabled]="savingPwd||!currentPassword||!newPassword||newPassword!==confirmPassword">
+          <i class="fas fa-key" *ngIf="!savingPwd"></i><i class="fas fa-spinner fa-spin" *ngIf="savingPwd"></i>
+          {{ savingPwd ? 'Changing...' : 'Change Password' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

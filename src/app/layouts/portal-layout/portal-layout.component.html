@@ -1,0 +1,37 @@
+<div class="portal-wrapper">
+
+  <!-- Top Navbar -->
+  <header class="portal-navbar">
+    <div class="navbar-brand">
+      <i class="fas fa-truck"></i>
+      <span>LoadTrack</span>
+      <span class="role-badge">{{ role }}</span>
+    </div>
+
+    <nav class="portal-nav">
+      <a *ngFor="let link of navLinks"
+         [routerLink]="link.path"
+         routerLinkActive="active"
+         class="nav-link">
+        <i [class]="link.icon"></i>
+        {{ link.label }}
+      </a>
+    </nav>
+
+    <div class="navbar-right">
+      <span class="username">
+        <i class="fas fa-user-circle"></i>
+        {{ authService.getUsername() }}
+      </span>
+      <button class="logout-btn" (click)="logout()">
+        <i class="fas fa-sign-out-alt"></i> Logout
+      </button>
+    </div>
+  </header>
+
+  <!-- Page Content -->
+  <main class="portal-content">
+    <router-outlet></router-outlet>
+  </main>
+
+</div>

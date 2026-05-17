@@ -1,0 +1,191 @@
+<div class="page-header">
+  <div><h1 class="page-title">Sand Requests</h1><p class="page-subtitle">Request sand and track your order status</p></div>
+  <button class="btn btn-primary" (click)="openNew()">
+    <i class="fas fa-plus"></i> New Request
+  </button>
+</div>
+
+<div class="alert alert-success" *ngIf="successMsg"><i class="fas fa-check-circle"></i> {{ successMsg }}</div>
+<div class="alert alert-danger"  *ngIf="errorMsg && !showModal"><i class="fas fa-exclamation-circle"></i> {{ errorMsg }}</div>
+
+<div *ngIf="loading" class="loading-state"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+
+<div *ngIf="!loading">
+
+  <!-- Request Cards -->
+  <div *ngIf="requests.length > 0" class="requests-list">
+    <div *ngFor="let r of requests" class="request-card"
+         [class.accepted]="r.status==='ACCEPTED'"
+         [class.rejected]="r.status==='REJECTED'"
+         [class.delivered]="$any(r.status)==='DELIVERED'">
+
+      <div class="req-header">
+        <div class="req-title">
+          <i class="fas fa-layer-group"></i>
+          {{ r.sandType.name }} — {{ r.tons }} tons
+        </div>
+        <span class="badge" [ngClass]="getStatusClass(r.status)">
+          <i [class]="getStatusIcon(r.status)"></i> {{ r.status }}
+        </span>
+      </div>
+
+      <div class="req-details">
+        <div class="req-detail-item">
+          <i class="fas fa-map-marker-alt"></i>
+          <span>{{ r.sourceLocation }} → {{ r.destinationLocation }}</span>
+        </div>
+        <div class="req-detail-item">
+          <i class="fas fa-road"></i>
+          <span>{{ r.distanceKm }} km</span>
+        </div>
+        <div class="req-detail-item">
+          <i class="fas fa-calendar"></i>
+          <span>Requested for: {{ r.requestedDate }}</span>
+        </div>
+        <div class="req-detail-item">
+          <i class="fas fa-rupee-sign"></i>
+          <span>Est. Amount: ₹{{ (r.tons * r.sandType.pricePerTon) | number }}</span>
+        </div>
+      </div>
+
+      <div class="req-remarks" *ngIf="r.remarks">
+        <i class="fas fa-comment"></i> {{ r.remarks }}
+      </div>
+
+      <!-- Admin response -->
+      <div class="req-admin-response" *ngIf="r.status !== 'PENDING'">
+        <div class="admin-response-label">
+          <i class="fas fa-user-shield"></i> Admin Response:
+        </div>
+        <div class="admin-response-text">{{ r.adminRemarks || 'No remarks' }}</div>
+        <div class="trip-link" *ngIf="r.status === 'ACCEPTED' && r.trip">
+          <i class="fas fa-route"></i> Trip #{{ r.trip.id }} has been created for this request
+        </div>
+        <div class="delivered-msg" *ngIf="$any(r.status) === 'DELIVERED'">
+          <i class="fas fa-check-circle"></i> Sand has been delivered successfully!
+        </div>
+      </div>
+
+      <div class="req-footer">
+        <span class="req-date">Submitted: {{ r.createdAt | date:'dd MMM yyyy, hh:mm a' }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="empty-state-box" *ngIf="requests.length === 0">
+    <i class="fas fa-layer-group"></i>
+    <h3>No requests yet</h3>
+    <p>Submit a sand request and admin will assign a truck and driver for you.</p>
+    <button class="btn btn-primary" (click)="openNew()">
+      <i class="fas fa-plus"></i> Submit First Request
+    </button>
+  </div>
+
+</div>
+
+<!-- New Request Modal -->
+<div class="modal-overlay" *ngIf="showModal" (click)="showModal=false">
+  <div class="modal modal-req" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3 class="modal-title"><i class="fas fa-layer-group"></i> New Sand Request</h3>
+      <button class="modal-close" (click)="showModal=false">&times;</button>
+    </div>
+
+    <div class="alert alert-danger" *ngIf="errorMsg">{{ errorMsg }}</div>
+
+    <form #reqForm="ngForm" novalidate>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Sand Type <span class="req">*</span></label>
+          <select class="form-control" [(ngModel)]="form.sandTypeId" name="sandTypeId"
+                  required #sandTypeId="ngModel" (change)="onSandTypeChange()"
+                  [class.is-invalid]="sandTypeId.invalid && sandTypeId.touched">
+            <option [ngValue]="0" disabled>Select sand type</option>
+            <option *ngFor="let s of sandTypes" [ngValue]="s.id">
+              {{ s.name }} — ₹{{ s.pricePerTon }}/ton
+            </option>
+          </select>
+          <div class="field-error" *ngIf="sandTypeId.invalid && sandTypeId.touched">
+            <i class="fas fa-exclamation-circle"></i> Sand type is required
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Tons Required <span class="req">*</span></label>
+          <input type="number" class="form-control" [(ngModel)]="form.tons" name="tons"
+                 required min="0.1" step="0.1" #tons="ngModel"
+                 [class.is-invalid]="tons.invalid && tons.touched"
+                 (input)="onTonsChange()" placeholder="e.g. 10">
+          <div class="field-error" *ngIf="tons.invalid && tons.touched">
+            <i class="fas fa-exclamation-circle"></i>
+            <span *ngIf="tons.errors?.['required']">Tons is required</span>
+            <span *ngIf="tons.errors?.['min']">Must be greater than 0</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Source Location <span class="req">*</span></label>
+          <input type="text" class="form-control" [(ngModel)]="form.sourceLocation" name="sourceLocation"
+                 required #src="ngModel" [class.is-invalid]="src.invalid && src.touched"
+                 placeholder="e.g. Quarry, Salem">
+          <div class="field-error" *ngIf="src.invalid && src.touched">
+            <i class="fas fa-exclamation-circle"></i> Source location is required
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Destination <span class="req">*</span></label>
+          <input type="text" class="form-control" [(ngModel)]="form.destinationLocation" name="destinationLocation"
+                 required #dest="ngModel" [class.is-invalid]="dest.invalid && dest.touched"
+                 placeholder="e.g. Construction Site, Chennai">
+          <div class="field-error" *ngIf="dest.invalid && dest.touched">
+            <i class="fas fa-exclamation-circle"></i> Destination is required
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Distance (km) <span class="req">*</span></label>
+          <input type="number" class="form-control" [(ngModel)]="form.distanceKm" name="distanceKm"
+                 required min="0" step="0.1" #dist="ngModel"
+                 [class.is-invalid]="dist.invalid && dist.touched" placeholder="e.g. 25">
+          <div class="field-error" *ngIf="dist.invalid && dist.touched">
+            <i class="fas fa-exclamation-circle"></i> Distance is required
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Requested Date <span class="req">*</span></label>
+          <input type="date" class="form-control" [(ngModel)]="form.requestedDate" name="requestedDate"
+                 required #reqDate="ngModel" [class.is-invalid]="reqDate.invalid && reqDate.touched">
+          <div class="field-error" *ngIf="reqDate.invalid && reqDate.touched">
+            <i class="fas fa-exclamation-circle"></i> Date is required
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Remarks (Optional)</label>
+        <textarea class="form-control" [(ngModel)]="form.remarks" name="remarks"
+                  rows="2" placeholder="Any special instructions..."></textarea>
+      </div>
+
+      <!-- Estimated Amount -->
+      <div class="estimate-box" *ngIf="estimatedAmount > 0">
+        <i class="fas fa-calculator"></i>
+        Estimated Amount: <strong>₹{{ estimatedAmount | number }}</strong>
+        <span>({{ form.tons }} tons × ₹{{ estimatedAmount / form.tons | number:'1.0-0' }}/ton)</span>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="showModal=false">Cancel</button>
+        <button type="button" class="btn btn-primary" (click)="submit()" [disabled]="submitting">
+          <i class="fas fa-paper-plane" *ngIf="!submitting"></i>
+          <i class="fas fa-spinner fa-spin" *ngIf="submitting"></i>
+          {{ submitting ? 'Submitting...' : 'Submit Request' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

@@ -1,0 +1,73 @@
+<div class="page-header">
+  <div><h1 class="page-title">Settings</h1><p class="page-subtitle">Configure interest and payment rules</p></div>
+</div>
+
+<div class="alert alert-success" *ngIf="successMsg"><i class="fas fa-check-circle"></i> {{ successMsg }}</div>
+<div class="alert alert-danger" *ngIf="errorMsg"><i class="fas fa-exclamation-circle"></i> {{ errorMsg }}</div>
+
+<div class="card settings-card">
+  <div *ngIf="loading" class="loading-state"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+  <form (ngSubmit)="save()" *ngIf="!loading">
+    <div class="settings-section">
+      <h3><i class="fas fa-percentage"></i> Interest Configuration</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Interest Rate (%)</label>
+          <input type="number" class="form-control" [(ngModel)]="settings.interestRatePercent"
+                 name="interestRatePercent" required min="0" max="100" step="0.1">
+          <small class="hint">Applied when payment is delayed beyond allowed days</small>
+        </div>
+        <div class="form-group">
+          <label>Allowed Payment Days</label>
+          <input type="number" class="form-control" [(ngModel)]="settings.allowedDays"
+                 name="allowedDays" required min="1">
+          <small class="hint">Number of days before interest is applied</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3><i class="fas fa-road"></i> Distance Charge Configuration</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Base Distance (km)</label>
+          <input type="number" class="form-control" [(ngModel)]="settings.baseDistanceKm"
+                 name="baseDistanceKm" required min="0" step="0.1">
+          <small class="hint">No extra charge up to this distance</small>
+        </div>
+        <div class="form-group">
+          <label>Extra Charge Per km (₹)</label>
+          <input type="number" class="form-control" [(ngModel)]="settings.extraChargePerKm"
+                 name="extraChargePerKm" required min="0" step="1">
+          <small class="hint">Charged per km beyond base distance</small>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Driver's Share of Extra Charge (%)</label>
+          <input type="number" class="form-control" [(ngModel)]="settings.driverExtraSharePct"
+                 name="driverExtraSharePct" required min="0" max="100" step="1">
+          <small class="hint">% of extra distance charge added to driver salary</small>
+        </div>
+        <div class="form-group">
+          <label>Preview</label>
+          <div class="preview-box">
+            <div>Trip: 25 km → Extra: {{ 25 - settings.baseDistanceKm | number:'1.0-1' }} km</div>
+            <div>Extra charge: ₹{{ (25 - settings.baseDistanceKm) * settings.extraChargePerKm | number }}</div>
+            <div>Driver gets: ₹{{ (25 - settings.baseDistanceKm) * settings.extraChargePerKm * settings.driverExtraSharePct / 100 | number }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="formula-box">
+      <h4><i class="fas fa-calculator"></i> Interest Formula</h4>
+      <p>Final Amount = Original Amount + (Original Amount × Interest Rate / 100)</p>
+      <p class="example">Example: ₹20,000 × {{ settings.interestRatePercent }}% = ₹{{ (20000 * settings.interestRatePercent / 100) | number }} interest → Final: ₹{{ (20000 + 20000 * settings.interestRatePercent / 100) | number }}</p>
+    </div>
+
+    <button type="submit" class="btn btn-primary">
+      <i class="fas fa-save"></i> Save Settings
+    </button>
+  </form>
+</div>

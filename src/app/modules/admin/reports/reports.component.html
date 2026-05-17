@@ -1,0 +1,349 @@
+<div class="page-header">
+  <div><h1 class="page-title">Reports</h1><p class="page-subtitle">Driver, Dealer and Trip reports with export</p></div>
+</div>
+
+<div class="alert alert-success" *ngIf="successMsg"><i class="fas fa-check-circle"></i> {{ successMsg }}</div>
+<div class="alert alert-danger"  *ngIf="errorMsg"><i class="fas fa-exclamation-circle"></i> {{ errorMsg }}</div>
+
+<!-- ── Tabs ── -->
+<div class="tabs">
+  <button class="tab-btn" [class.active]="activeTab === 'trips'"   (click)="setTab('trips')">
+    <i class="fas fa-route"></i> Trips Report
+  </button>
+  <button class="tab-btn" [class.active]="activeTab === 'drivers'" (click)="setTab('drivers')">
+    <i class="fas fa-id-card"></i> Driver Reports
+  </button>
+  <button class="tab-btn" [class.active]="activeTab === 'dealers'" (click)="setTab('dealers')">
+    <i class="fas fa-handshake"></i> Dealer Reports
+  </button>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     TAB 1 — TRIPS
+══════════════════════════════════════════════════════════════ -->
+<div *ngIf="activeTab === 'trips'" class="tab-content">
+  <div class="reports-grid">
+
+    <div class="report-card">
+      <div class="report-icon teal"><i class="fas fa-route"></i></div>
+      <h3>Trips Report</h3>
+      <p>Export all trips with truck, driver, dealer, sand type and amount details.</p>
+      <div class="date-filter">
+        <div class="form-group">
+          <label>From Date</label>
+          <input type="date" class="form-control" [(ngModel)]="fromDate">
+        </div>
+        <div class="form-group">
+          <label>To Date</label>
+          <input type="date" class="form-control" [(ngModel)]="toDate">
+        </div>
+      </div>
+      <button class="btn btn-success w-100" (click)="exportTrips()" [disabled]="loading">
+        <i class="fas fa-file-excel"></i> Export to Excel
+      </button>
+    </div>
+
+    <div class="report-card">
+      <div class="report-icon red"><i class="fas fa-clock"></i></div>
+      <h3>Pending Payments Report</h3>
+      <p>Export all unpaid and partially paid dealer payments with due dates.</p>
+      <div style="height:88px"></div>
+      <button class="btn btn-danger w-100" (click)="exportPendingPayments()" [disabled]="loading">
+        <i class="fas fa-file-excel"></i> Export to Excel
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     TAB 2 — DRIVERS
+══════════════════════════════════════════════════════════════ -->
+<div *ngIf="activeTab === 'drivers'" class="tab-content">
+
+  <div class="section-toolbar">
+    <span class="section-info">
+      <i class="fas fa-id-card"></i> {{ driverReports.length }} drivers
+    </span>
+    <button class="btn btn-success btn-sm" (click)="exportAllDrivers()">
+      <i class="fas fa-file-excel"></i> Export All Drivers
+    </button>
+  </div>
+
+  <div *ngIf="driverLoading" class="loading-state">
+    <i class="fas fa-spinner fa-spin"></i> Loading driver reports...
+  </div>
+
+  <div *ngIf="!driverLoading && driverReports.length === 0" class="empty-state-box">
+    <i class="fas fa-id-card"></i>
+    <p>No driver data available</p>
+  </div>
+
+  <!-- Driver Cards -->
+  <div *ngFor="let dr of driverReports" class="report-section">
+
+    <!-- Driver Header -->
+    <div class="report-section-header" (click)="toggleDriver(dr.driverId)">
+      <div class="driver-info">
+        <div class="driver-avatar">{{ dr.driverName.charAt(0).toUpperCase() }}</div>
+        <div>
+          <div class="driver-name">{{ dr.driverName }}</div>
+          <div class="driver-meta">{{ dr.phone }} &nbsp;|&nbsp; {{ dr.licenseNumber }}</div>
+        </div>
+      </div>
+
+      <!-- Summary Pills -->
+      <div class="summary-pills">
+        <div class="pill blue">
+          <span class="pill-val">{{ dr.totalTrips }}</span>
+          <span class="pill-lbl">Trips</span>
+        </div>
+        <div class="pill green">
+          <span class="pill-val">{{ dr.completedTrips }}</span>
+          <span class="pill-lbl">Completed</span>
+        </div>
+        <div class="pill orange">
+          <span class="pill-val">{{ dr.totalTonsCarried }}</span>
+          <span class="pill-lbl">Tons</span>
+        </div>
+        <div class="pill teal">
+          <span class="pill-val">₹{{ dr.totalSalaryEarned | number }}</span>
+          <span class="pill-lbl">Salary Earned</span>
+        </div>
+        <div class="pill red">
+          <span class="pill-val">₹{{ dr.salaryPending | number }}</span>
+          <span class="pill-lbl">Pending</span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button class="btn btn-success btn-sm" (click)="exportDriver(dr.driverId, dr.driverName); $event.stopPropagation()">
+          <i class="fas fa-file-excel"></i>
+        </button>
+        <i class="fas expand-icon" [class.fa-chevron-down]="expandedDriver !== dr.driverId"
+           [class.fa-chevron-up]="expandedDriver === dr.driverId"></i>
+      </div>
+    </div>
+
+    <!-- Driver Trip Details (expanded) -->
+    <div class="report-section-body" *ngIf="expandedDriver === dr.driverId">
+
+      <!-- Salary Summary -->
+      <div class="salary-summary">
+        <div class="salary-card">
+          <div class="salary-label">Salary Per Trip</div>
+          <div class="salary-value">₹{{ dr.salaryPerTrip | number }}</div>
+        </div>
+        <div class="salary-card green">
+          <div class="salary-label">Total Earned</div>
+          <div class="salary-value">₹{{ dr.totalSalaryEarned | number }}</div>
+        </div>
+        <div class="salary-card blue">
+          <div class="salary-label">Credited</div>
+          <div class="salary-value">₹{{ dr.salaryCredited | number }}</div>
+        </div>
+        <div class="salary-card red">
+          <div class="salary-label">Pending</div>
+          <div class="salary-value">₹{{ dr.salaryPending | number }}</div>
+        </div>
+        <div class="salary-card purple">
+          <div class="salary-label">Assigned Truck</div>
+          <div class="salary-value">{{ dr.assignedTruck }}</div>
+        </div>
+      </div>
+
+      <!-- Trip Log Table -->
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Date</th>
+              <th>Truck</th>
+              <th>Dealer</th>
+              <th>Sand Type</th>
+              <th>Tons</th>
+              <th>Source → Destination</th>
+              <th>Trip Amount</th>
+              <th>Trip Status</th>
+              <th>Salary</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let t of dr.trips; let i = index">
+              <td>{{ i+1 }}</td>
+              <td>{{ t.tripDate }}</td>
+              <td><strong>{{ t.truckNumber }}</strong></td>
+              <td>{{ t.dealerName }}</td>
+              <td>{{ t.sandType }}</td>
+              <td>{{ t.tons }}</td>
+              <td class="route-cell">
+                <span class="route-from">{{ t.source }}</span>
+                <i class="fas fa-arrow-right route-arrow"></i>
+                <span class="route-to">{{ t.destination }}</span>
+              </td>
+              <td>₹{{ t.totalAmount | number }}</td>
+              <td><span class="badge" [ngClass]="getTripStatusClass(t.status)">{{ t.status }}</span></td>
+              <td>
+                <span *ngIf="t.salaryForTrip > 0" class="salary-earned">₹{{ t.salaryForTrip | number }}</span>
+                <span *ngIf="t.salaryForTrip === 0" class="salary-na">—</span>
+              </td>
+            </tr>
+            <tr *ngIf="dr.trips.length === 0">
+              <td colspan="10" class="empty-state">No trips yet</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     TAB 3 — DEALERS
+══════════════════════════════════════════════════════════════ -->
+<div *ngIf="activeTab === 'dealers'" class="tab-content">
+
+  <div class="section-toolbar">
+    <span class="section-info">
+      <i class="fas fa-handshake"></i> {{ dealerReports.length }} dealers
+    </span>
+    <button class="btn btn-success btn-sm" (click)="exportAllDealers()">
+      <i class="fas fa-file-excel"></i> Export All Dealers
+    </button>
+  </div>
+
+  <div *ngIf="dealerLoading" class="loading-state">
+    <i class="fas fa-spinner fa-spin"></i> Loading dealer reports...
+  </div>
+
+  <div *ngIf="!dealerLoading && dealerReports.length === 0" class="empty-state-box">
+    <i class="fas fa-handshake"></i>
+    <p>No dealer data available</p>
+  </div>
+
+  <!-- Dealer Cards -->
+  <div *ngFor="let dr of dealerReports" class="report-section">
+
+    <!-- Dealer Header -->
+    <div class="report-section-header" (click)="toggleDealer(dr.dealerId)">
+      <div class="driver-info">
+        <div class="driver-avatar dealer-avatar">{{ dr.dealerName.charAt(0).toUpperCase() }}</div>
+        <div>
+          <div class="driver-name">{{ dr.dealerName }}</div>
+          <div class="driver-meta">{{ dr.phone }} &nbsp;|&nbsp; {{ dr.address }}</div>
+        </div>
+      </div>
+
+      <!-- Summary Pills -->
+      <div class="summary-pills">
+        <div class="pill blue">
+          <span class="pill-val">{{ dr.totalTrips }}</span>
+          <span class="pill-lbl">Trips</span>
+        </div>
+        <div class="pill orange">
+          <span class="pill-val">{{ dr.totalTonsReceived }}</span>
+          <span class="pill-lbl">Tons</span>
+        </div>
+        <div class="pill teal">
+          <span class="pill-val">₹{{ dr.totalBilled | number }}</span>
+          <span class="pill-lbl">Total Billed</span>
+        </div>
+        <div class="pill green">
+          <span class="pill-val">₹{{ dr.totalPaid | number }}</span>
+          <span class="pill-lbl">Paid</span>
+        </div>
+        <div class="pill red">
+          <span class="pill-val">₹{{ dr.totalPending | number }}</span>
+          <span class="pill-lbl">Pending</span>
+        </div>
+        <div class="pill purple" *ngIf="dr.totalInterest > 0">
+          <span class="pill-val">₹{{ dr.totalInterest | number }}</span>
+          <span class="pill-lbl">Interest</span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button class="btn btn-success btn-sm" (click)="exportDealer(dr.dealerId, dr.dealerName); $event.stopPropagation()">
+          <i class="fas fa-file-excel"></i>
+        </button>
+        <i class="fas expand-icon" [class.fa-chevron-down]="expandedDealer !== dr.dealerId"
+           [class.fa-chevron-up]="expandedDealer === dr.dealerId"></i>
+      </div>
+    </div>
+
+    <!-- Dealer Trip Details (expanded) -->
+    <div class="report-section-body" *ngIf="expandedDealer === dr.dealerId">
+
+      <!-- Payment Summary -->
+      <div class="salary-summary">
+        <div class="salary-card teal">
+          <div class="salary-label">Total Billed</div>
+          <div class="salary-value">₹{{ dr.totalBilled | number }}</div>
+        </div>
+        <div class="salary-card green">
+          <div class="salary-label">Total Paid</div>
+          <div class="salary-value">₹{{ dr.totalPaid | number }}</div>
+        </div>
+        <div class="salary-card red">
+          <div class="salary-label">Pending</div>
+          <div class="salary-value">₹{{ dr.totalPending | number }}</div>
+        </div>
+        <div class="salary-card orange">
+          <div class="salary-label">Interest Applied</div>
+          <div class="salary-value">₹{{ dr.totalInterest | number }}</div>
+        </div>
+        <div class="salary-card blue">
+          <div class="salary-label">Completed Trips</div>
+          <div class="salary-value">{{ dr.completedTrips }} / {{ dr.totalTrips }}</div>
+        </div>
+      </div>
+
+      <!-- Trip + Payment Log Table -->
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Date</th>
+              <th>Truck</th>
+              <th>Driver</th>
+              <th>Sand Type</th>
+              <th>Tons</th>
+              <th>Trip Amount</th>
+              <th>Paid</th>
+              <th>Pending</th>
+              <th>Interest</th>
+              <th>Due Date</th>
+              <th>Pay Status</th>
+              <th>Trip Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let t of dr.trips; let i = index"
+                [class.row-overdue]="t.paymentStatus !== 'PAID' && t.dueDate !== '—' && isOverdue(t.dueDate)">
+              <td>{{ i+1 }}</td>
+              <td>{{ t.tripDate }}</td>
+              <td><strong>{{ t.truckNumber }}</strong></td>
+              <td>{{ t.driverName }}</td>
+              <td>{{ t.sandType }}</td>
+              <td>{{ t.tons }}</td>
+              <td>₹{{ t.tripAmount | number }}</td>
+              <td class="paid-cell">₹{{ t.paidAmount | number }}</td>
+              <td [class.pending-cell]="t.pendingAmount > 0">₹{{ t.pendingAmount | number }}</td>
+              <td [class.interest-cell]="t.interestAmount > 0">
+                {{ t.interestAmount > 0 ? '₹' + (t.interestAmount | number) : '—' }}
+              </td>
+              <td [class.overdue-text]="isOverdue(t.dueDate) && t.paymentStatus !== 'PAID'">{{ t.dueDate }}</td>
+              <td><span class="badge" [ngClass]="getPayStatusClass(t.paymentStatus)">{{ t.paymentStatus }}</span></td>
+              <td><span class="badge" [ngClass]="getTripStatusClass(t.tripStatus)">{{ t.tripStatus }}</span></td>
+            </tr>
+            <tr *ngIf="dr.trips.length === 0">
+              <td colspan="13" class="empty-state">No trips yet</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

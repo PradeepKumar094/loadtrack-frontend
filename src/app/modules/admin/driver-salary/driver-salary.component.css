@@ -1,0 +1,76 @@
+.loading-state { text-align: center; padding: 60px; color: #888; }
+
+/* Driver Salary Card */
+.driver-salary-card {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+
+.dsc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  cursor: pointer;
+  transition: background 0.15s;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.dsc-header:hover { background: #f8f9fa; }
+
+.dsc-driver-info { display: flex; align-items: center; gap: 14px; min-width: 180px; }
+.dsc-avatar {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: linear-gradient(135deg, #3498db, #2980b9);
+  color: #fff; font-size: 18px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.dsc-name { font-size: 15px; font-weight: 600; color: #2c3e50; }
+.dsc-rate { font-size: 12px; color: #888; margin-top: 2px; }
+
+/* Pills */
+.dsc-pills { display: flex; gap: 10px; flex-wrap: wrap; flex: 1; justify-content: center; }
+.dsc-pill {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 6px 16px; border-radius: 8px; min-width: 90px;
+}
+.dsc-pill.teal   { background: #e8f8f5; }
+.dsc-pill.green  { background: #eafaf1; }
+.dsc-pill.red    { background: #fdedec; }
+.dsc-pill.grey   { background: #f8f9fa; }
+.pill-val { font-size: 14px; font-weight: 700; color: #2c3e50; }
+.pill-lbl { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+
+/* Actions */
+.dsc-actions { display: flex; align-items: center; gap: 12px; }
+.expand-icon { font-size: 14px; color: #aaa; }
+
+/* Body */
+.dsc-body { padding: 0 20px 20px; border-top: 1px solid #f0f0f0; }
+.dsc-body-title { font-size: 13px; font-weight: 600; color: #555; margin: 14px 0 10px; display: flex; align-items: center; gap: 6px; }
+.dsc-body-title i { color: #3498db; }
+.credit-amount { color: #27ae60; font-weight: 600; }
+.no-history { font-size: 13px; color: #aaa; padding: 12px; background: #f8f9fa; border-radius: 6px; }
+.no-history i { margin-right: 6px; }
+
+/* Empty state */
+.empty-state-box { background: #fff; border-radius: 12px; padding: 60px; text-align: center; color: #aaa; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.empty-state-box i { font-size: 48px; margin-bottom: 12px; display: block; }
+
+/* Pay Modal */
+.pay-summary { background: #f8f9fa; border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+.pay-driver-name { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.pay-avatar { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #3498db, #2980b9); color: #fff; font-size: 16px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.pay-name { font-size: 15px; font-weight: 600; color: #2c3e50; }
+.pay-rate { font-size: 12px; color: #888; }
+.pay-breakdown { display: flex; flex-direction: column; gap: 0; }
+.pay-row { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid #eee; font-size: 14px; }
+.pay-row:last-child { border-bottom: none; }
+.pay-row.highlight { background: #fff3cd; margin: 0 -16px; padding: 8px 16px; border-radius: 0 0 8px 8px; }
+.text-success { color: #27ae60; }
+.text-danger  { color: #e74c3c; }
+.hint { font-size: 12px; color: #888; margin-top: 4px; display: block; }

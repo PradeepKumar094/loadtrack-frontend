@@ -1,0 +1,302 @@
+<div class="page-header">
+  <div><h1 class="page-title">User Management</h1><p class="page-subtitle">Create and manage login accounts for drivers and dealers</p></div>
+  <button class="btn btn-primary" (click)="openCreate()">
+    <i class="fas fa-user-plus"></i> Create Account
+  </button>
+</div>
+
+<div class="alert alert-success" *ngIf="successMsg"><i class="fas fa-check-circle"></i> {{ successMsg }}</div>
+<div class="alert alert-danger"  *ngIf="errorMsg"><i class="fas fa-exclamation-circle"></i> {{ errorMsg }}</div>
+
+<div class="card">
+  <div class="table-toolbar">
+    <div class="toolbar-left">
+      <div class="search-box">
+        <i class="fas fa-search"></i>
+        <input type="text" placeholder="Search username or name..."
+               [(ngModel)]="searchTerm" (input)="applyFilters()" class="search-input">
+      </div>
+      <div class="filter-group">
+        <label><i class="fas fa-filter"></i> Role:</label>
+        <select class="form-control filter-select" [(ngModel)]="filterRole" (change)="applyFilters()">
+          <option value="">All Roles</option>
+          <option value="DRIVER">Driver</option>
+          <option value="DEALER">Dealer</option>
+        </select>
+      </div>
+    </div>
+    <div class="toolbar-right">
+      <span class="record-count">{{ filtered.length }} of {{ users.length }} accounts</span>
+      <button class="btn btn-secondary btn-sm" (click)="filterRole=''; searchTerm=''; applyFilters()"
+              *ngIf="filterRole || searchTerm">
+        <i class="fas fa-times"></i> Clear
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="loading-state"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+
+  <div class="table-wrapper" *ngIf="!loading">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Username</th>
+          <th>Role</th>
+          <th>Linked To</th>
+          <th>Phone</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let u of filtered; let i = index" [class.inactive-row]="!u.status">
+          <td>{{ i+1 }}</td>
+          <td>
+            <div class="user-cell">
+              <div class="user-avatar" [class.driver-av]="u.role==='DRIVER'" [class.dealer-av]="u.role==='DEALER'">
+                {{ u.username.charAt(0).toUpperCase() }}
+              </div>
+              <strong>{{ u.username }}</strong>
+            </div>
+          </td>
+          <td><span class="badge" [ngClass]="getRoleClass(u.role)">{{ u.role }}</span></td>
+          <td>
+            <span *ngIf="u.linkedDriverName" class="linked-name">
+              <i class="fas fa-id-card"></i> {{ u.linkedDriverName }}
+            </span>
+            <span *ngIf="u.linkedDealerName" class="linked-name">
+              <i class="fas fa-handshake"></i> {{ u.linkedDealerName }}
+            </span>
+            <span *ngIf="!u.linkedDriverName && !u.linkedDealerName" class="text-muted">—</span>
+          </td>
+          <td>{{ u.phone || '—' }}</td>
+          <td>
+            <span class="status-badge" [class.active-badge]="u.status" [class.inactive-badge]="!u.status">
+              <span class="status-dot-sm"></span>
+              {{ u.status ? 'Active' : 'Inactive' }}
+            </span>
+          </td>
+          <td>
+            <div class="action-btns">
+              <!-- Toggle Active/Inactive -->
+              <button class="btn btn-sm" [class.btn-warning]="u.status" [class.btn-success]="!u.status"
+                      (click)="toggleStatus(u)"
+                      [title]="u.status ? 'Deactivate account' : 'Activate account'">
+                <i class="fas" [class.fa-ban]="u.status" [class.fa-check]="!u.status"></i>
+              </button>
+              <!-- Reset Password -->
+              <button class="btn btn-secondary btn-sm" (click)="openReset(u)" title="Reset password">
+                <i class="fas fa-key"></i>
+              </button>
+              <!-- Delete -->
+              <button class="btn btn-danger btn-sm" (click)="deleteUser(u)" title="Delete account">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+        <tr *ngIf="filtered.length === 0">
+          <td colspan="7" class="empty-state">No user accounts found</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     CREATE ACCOUNT MODAL
+══════════════════════════════════════════════ -->
+<div class="modal-overlay" *ngIf="showCreateModal" (click)="showCreateModal=false">
+  <div class="modal modal-create" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3 class="modal-title"><i class="fas fa-user-plus"></i> Create Login Account</h3>
+      <button class="modal-close" (click)="showCreateModal=false">&times;</button>
+    </div>
+
+    <div class="alert alert-danger" *ngIf="createError">
+      <i class="fas fa-exclamation-circle"></i> {{ createError }}
+    </div>
+
+    <form #createForm="ngForm" novalidate>
+
+      <!-- Role Selection -->
+      <div class="role-selector">
+        <button type="button" class="role-btn" [class.active]="createRole==='DRIVER'"
+                (click)="createRole='DRIVER'; onRoleChange()">
+          <i class="fas fa-id-card"></i> Driver Account
+        </button>
+        <button type="button" class="role-btn" [class.active]="createRole==='DEALER'"
+                (click)="createRole='DEALER'; onRoleChange()">
+          <i class="fas fa-handshake"></i> Dealer Account
+        </button>
+      </div>
+
+      <!-- Select Driver -->
+      <div class="form-group" *ngIf="createRole==='DRIVER'">
+        <label>Select Driver <span class="req">*</span></label>
+        <select class="form-control" [(ngModel)]="selectedDriverId" name="driverId"
+                (change)="onDriverSelect()">
+          <option [ngValue]="0" disabled>— Select a driver —</option>
+          <option *ngFor="let d of availableDrivers" [ngValue]="d.id">
+            {{ d.name }} ({{ d.phone }})
+          </option>
+        </select>
+        <div class="hint" *ngIf="availableDrivers.length === 0">
+          <i class="fas fa-info-circle"></i> All drivers already have accounts
+        </div>
+      </div>
+
+      <!-- Select Dealer -->
+      <div class="form-group" *ngIf="createRole==='DEALER'">
+        <label>Select Dealer <span class="req">*</span></label>
+        <select class="form-control" [(ngModel)]="selectedDealerId" name="dealerId"
+                (change)="onDealerSelect()">
+          <option [ngValue]="0" disabled>— Select a dealer —</option>
+          <option *ngFor="let d of availableDealers" [ngValue]="d.id">
+            {{ d.name }} ({{ d.phone }})
+          </option>
+        </select>
+        <div class="hint" *ngIf="availableDealers.length === 0">
+          <i class="fas fa-info-circle"></i> All dealers already have accounts
+        </div>
+      </div>
+
+      <!-- Username -->
+      <div class="form-group">
+        <label>Username <span class="req">*</span></label>
+        <div class="input-icon-wrap">
+          <i class="fas fa-user"></i>
+          <input type="text" class="form-control"
+                 [(ngModel)]="createUsername" name="username"
+                 required #uname="ngModel"
+                 [class.is-invalid]="uname.invalid && uname.touched"
+                 placeholder="e.g. john.driver">
+        </div>
+        <div class="field-error" *ngIf="uname.invalid && uname.touched">
+          <i class="fas fa-exclamation-circle"></i> Username is required
+        </div>
+      </div>
+
+      <!-- Password -->
+      <div class="form-group">
+        <label>Password <span class="req">*</span></label>
+        <div class="input-icon-wrap">
+          <i class="fas fa-lock"></i>
+          <input [type]="showCreatePwd ? 'text' : 'password'"
+                 class="form-control"
+                 [(ngModel)]="createPassword" name="password"
+                 required minlength="6" #pwd="ngModel"
+                 [class.is-invalid]="pwd.invalid && pwd.touched"
+                 placeholder="Min 6 characters">
+          <button type="button" class="eye-btn" (click)="showCreatePwd=!showCreatePwd">
+            <i [class]="showCreatePwd ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+          </button>
+        </div>
+        <div class="field-error" *ngIf="pwd.invalid && pwd.touched">
+          <i class="fas fa-exclamation-circle"></i>
+          <span *ngIf="pwd.errors?.['required']">Password is required</span>
+          <span *ngIf="pwd.errors?.['minlength']">Minimum 6 characters</span>
+        </div>
+        <button type="button" class="btn btn-secondary btn-sm generate-btn" (click)="generatePassword()">
+          <i class="fas fa-magic"></i> Generate Password
+        </button>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="showCreateModal=false">Cancel</button>
+        <button type="button" class="btn btn-primary" (click)="createUser()" [disabled]="creating">
+          <i class="fas fa-user-plus" *ngIf="!creating"></i>
+          <i class="fas fa-spinner fa-spin" *ngIf="creating"></i>
+          {{ creating ? 'Creating...' : 'Create Account' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     CREDENTIALS POPUP (shown after creation)
+══════════════════════════════════════════════ -->
+<div class="modal-overlay" *ngIf="showCredentials">
+  <div class="modal credentials-modal" (click)="$event.stopPropagation()">
+    <div class="cred-header">
+      <div class="cred-icon"><i class="fas fa-key"></i></div>
+      <h3>Account Created!</h3>
+      <p>Share these credentials with <strong>{{ createdFor }}</strong></p>
+    </div>
+
+    <div class="cred-box">
+      <div class="cred-row">
+        <div class="cred-label"><i class="fas fa-user"></i> Username</div>
+        <div class="cred-value">{{ createdUsername }}</div>
+        <button class="copy-btn" (click)="copyToClipboard(createdUsername)" title="Copy">
+          <i class="fas fa-copy"></i>
+        </button>
+      </div>
+      <div class="cred-row">
+        <div class="cred-label"><i class="fas fa-lock"></i> Password</div>
+        <div class="cred-value">{{ createdPassword }}</div>
+        <button class="copy-btn" (click)="copyToClipboard(createdPassword)" title="Copy">
+          <i class="fas fa-copy"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="cred-copy-all">
+      <button class="btn btn-secondary w-100" (click)="copyToClipboard('Username: ' + createdUsername + '\nPassword: ' + createdPassword)">
+        <i class="fas fa-copy"></i> Copy Both Credentials
+      </button>
+    </div>
+
+    <div class="cred-warning">
+      <i class="fas fa-exclamation-triangle"></i>
+      Save these credentials now. The password cannot be retrieved later.
+      The user should change their password after first login.
+    </div>
+
+    <button class="btn btn-primary w-100" (click)="showCredentials=false">
+      <i class="fas fa-check"></i> Done
+    </button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     RESET PASSWORD MODAL
+══════════════════════════════════════════════ -->
+<div class="modal-overlay" *ngIf="showResetModal" (click)="showResetModal=false">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3 class="modal-title"><i class="fas fa-key"></i> Reset Password</h3>
+      <button class="modal-close" (click)="showResetModal=false">&times;</button>
+    </div>
+
+    <div class="alert alert-danger" *ngIf="resetError">
+      <i class="fas fa-exclamation-circle"></i> {{ resetError }}
+    </div>
+
+    <p class="reset-info">Resetting password for: <strong>{{ resetUsername }}</strong></p>
+
+    <div class="form-group">
+      <label>New Password <span class="req">*</span></label>
+      <div class="input-icon-wrap">
+        <i class="fas fa-lock"></i>
+        <input [type]="showResetPwd ? 'text' : 'password'"
+               class="form-control" [(ngModel)]="resetNewPassword"
+               placeholder="Min 6 characters">
+        <button type="button" class="eye-btn" (click)="showResetPwd=!showResetPwd">
+          <i [class]="showResetPwd ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="showResetModal=false">Cancel</button>
+      <button type="button" class="btn btn-warning" (click)="resetPassword()" [disabled]="resetting">
+        <i class="fas fa-key" *ngIf="!resetting"></i>
+        <i class="fas fa-spinner fa-spin" *ngIf="resetting"></i>
+        {{ resetting ? 'Resetting...' : 'Reset Password' }}
+      </button>
+    </div>
+  </div>
+</div>
